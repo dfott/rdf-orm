@@ -23,32 +23,37 @@ export interface Schema {
     attributes: AttributeList;
 }
 
+import { Request} from "./Request";
+
+const request = new Request('http://localhost:3030/test/query', 'http://localhost:3030/test/update');
 
 export class RDF {
 
     public static createModel(schema: Schema): any {
         return class Model {
-            public schemas = schema.schemas;
-            public attributes = schema.attributes;
+
+            private schema = schema;
             public values: AttributeValues;
-            public modelType = schema.type;
-            public modelSchema = schema.typeSchema;
 
             private query: QueryBuilder;
             private edited = false;
 
             constructor(values: AttributeValues) {
                this.values = values;
-               this.query = new QueryBuilder(this.schemas, this.attributes, this.values, this.modelSchema, this.modelType);
+               this.query = new QueryBuilder(this.schema, this.values);
             }
 
-            public save(): string {
+            public save(sendRequest: boolean) {
+                const query = this.edited ? this.query.generateUpdate(this.values) : this.query.generateCreate();
                 this.setEdited(true);
-                return this.edited ? this.query.generateUpdate(this.values) : this.query.generateCreate();
+                if (sendRequest) request.update(query);
+                return query;
             }
 
-            public find(): string {
-                return this.query.generateFind();
+            public static async find() {
+                const query = QueryBuilder.generateFind(schema);
+                const result = await request.query(query);
+                console.log(result);
             }
 
             private setEdited(edited: boolean) {
@@ -61,19 +66,34 @@ export class RDF {
 export class QueryBuilder {
 
     private readonly prefixString: string;
+    private readonly identifierString: string;
+
     private readonly identifier: any;
+    private readonly attributeSelectionList: string[];
+
+    private readonly schemas: SchemaList;
+    private readonly attributes: AttributeList;
+    private readonly typeSchema: string;
+    private readonly type: string;
 
     private readonly values: AttributeValues;
 
-    constructor(private schemas: SchemaList, private attributes: AttributeList, values: AttributeValues,
-                private typeSchema: string, private type: string) {
-
+    constructor(schema: Schema, values: AttributeValues) {
+        this.schemas = schema.schemas;
+        this.attributes = schema.attributes;
+        this.typeSchema = schema.typeSchema;
+        this.type = schema.type;
         this.values = { ...values };
-        this.prefixString = Object.keys(schemas)
-            .map(prefix => `PREFIX ${prefix}: <${this.schemas[prefix]}>`)
-            .join('\n');
 
+        this.prefixString = StringGenerator.generatePrefixString(this.schemas);
         this.identifier = Object.keys(this.attributes).find(key => this.attributes[key].identifier);
+
+        this.identifierString = Object.keys(this.attributes).map(key => {
+            const attribute = this.attributes[key];
+            return `?${this.type} ${attribute.prefix}:${attribute.type} ${attribute.identifier ? this.values[key] : `?${attribute.type}`}`;
+        }).join(' . ');
+
+        this.attributeSelectionList = StringGenerator.generateAttributeSelectionList(schema.attributes);
     }
 
     generateCreate() : string {
@@ -84,54 +104,51 @@ export class QueryBuilder {
             return `<${this.typeSchema}${this.type}/${this.values[this.identifier]}> ${attribute.prefix}:${attribute.type} ${value}`;
         }).join(' . ');
 
-        const createString =
-`${this.prefixString}\n
-insert data { ${insertString } }`;
-
-        return createString;
+        return `${this.prefixString}\r\nINSERT DATA\r\n \t{ ${insertString} }\r\n`;
     }
 
     generateUpdate(newValues: AttributeValues) : string{
-
-        const deleteString = Object.keys(this.attributes).map(key => {
-            const attribute = this.attributes[key];
-            return `?${this.type} ${attribute.prefix}:${attribute.type} ${attribute.identifier ? this.values[key] : `?${attribute.type}`}`;
-        }).join(' . ');
-
-
         const insertString = Object.keys(this.attributes).map(key => {
             const attribute = this.attributes[key];
             const value = typeof newValues[key] === 'string' ? `"${newValues[key]}"`: newValues[key];
             return `<${this.typeSchema}${this.type}/${newValues[this.identifier]}> ${attribute.prefix}:${attribute.type} ${value}`;
         }).join(' . ');
 
-        const saveString =
-`${this.prefixString}\n
-delete { ${deleteString} }
-insert { ${insertString} }
-where { ${deleteString} }`;
-
-        return saveString;
+        return `\r\n${this.prefixString}\n
+            delete { ${this.identifierString} }
+            insert { ${insertString} }
+            where { ${this.identifierString} }`;
     }
 
-    generateFind(): string {
+    public static generateFind(schema: Schema): string {
 
-        const selectString = Object.keys(this.attributes)
-            .map(key => {
-               return `?${this.attributes[key].type}`
-            }).join(' ');
+        const selectString = StringGenerator.generateAttributeSelectionList(schema.attributes).join(' ');
 
-        const whereString = Object.keys(this.attributes)
+        const whereString = Object.keys(schema.attributes)
             .map(key => {
-                const attribute = this.attributes[key];
-                return `?${this.type} ${attribute.prefix}:${attribute.type} ?${attribute.type}`
+                const attribute = schema.attributes[key];
+                return `?${schema.type} ${attribute.prefix}:${attribute.type} ?${attribute.type}`
             }).join(' . ');
 
-        const findString =
-`${this.prefixString}\n
-select ?${this.type} ${selectString}
-where { ${whereString} }`;
+        return `${StringGenerator.generatePrefixString(schema.schemas)}\n
+            select ?${schema.type} ${selectString}
+            where { ${whereString} }`;
+    }
 
-        return findString;
+}
+
+class StringGenerator {
+    public static generatePrefixString(schemas: SchemaList): string {
+        return Object.keys(schemas)
+            .map(prefix => `PREFIX ${prefix}: <${schemas[prefix]}>`)
+            .join('\n')
+    }
+
+    // --- TODO FILTERING -------
+    public static generateAttributeSelectionList(attributes: AttributeList) : string[] {
+        return Object.keys(attributes)
+            .map(key => {
+                return `?${attributes[key].type}`
+            })
     }
 }
