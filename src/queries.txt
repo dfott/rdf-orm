@@ -1,0 +1,163 @@
+getUsers() {
+        return `
+                PREFIX u: <http://localhost:3000/user/>
+
+                SELECT ?user ?id ?name ?lastname
+                WHERE {
+                    ?user u:id ?id.
+                    ?user u:name ?name.
+                    ?user u:lastname ?lastname.
+                }
+            `
+    },
+    getUser(uuid) {
+        return `
+                PREFIX u: <http://localhost:3000/user/>
+
+                SELECT ?user ?id ?name ?lastname
+                WHERE {
+                    ?user u:id ?id.
+                    ?user u:name ?name.
+                    ?user u:lastname ?lastname.
+                    ?user u:id ${uuid} .
+                }
+            `
+    },
+    insertUser(uuid, name, lastname) {
+        return `
+                PREFIX u: <http://localhost:3000/user/>
+
+                INSERT DATA {
+                    <http://localhost:3000/users/${uuid}/> u:id ${uuid}.
+                    <http://localhost:3000/users/${uuid}/> u:name "${name}".
+                    <http://localhost:3000/users/${uuid}/> u:lastname "${lastname}".
+                }
+            `
+    },
+    updateUser(oldID, name, lastname) {
+        return `
+                PREFIX p: <http://localhost:3000/user/>
+
+                delete { ?user p:id ${oldID} . ?user p:name ?name. ?user p:lastname ?lastname }
+                insert { <${this.identifier}users/${oldID}/> p:id ${oldID} . <${this.identifier}users/${oldID}/> p:name "${name}". <${this.identifier}users/${oldID}/> p:lastname "${lastname}" }
+                where {
+                    ?user p:id ${oldID} .
+                    ?user p:name ?name.
+                    ?user p:lastname ?lastname.
+                }
+            `
+    },
+    deleteUser(uuid) {
+        return `
+                PREFIX p: <http://localhost:3000/user/>
+
+                delete { ?user p:id ?id. ?user p:name ?name. ?user p:lastname ?lastname }
+                where {
+                ?user p:id ${uuid} .
+                ?user p:name ?name.
+                ?user p:lastname ?lastname.
+                }
+            `
+    },
+    getTweet(uuid) {
+        return `
+            PREFIX u: <http://localhost:3000/user/>
+            PREFIX t: <http://localhost:3000/tweet/>
+
+            SELECT ?tweet ?id ?content ?user ?name ?lastname
+            WHERE {
+                ?tweet t:id ?id.
+                ?tweet t:content ?content.
+                ?tweet t:user ?user.
+                ?user u:name ?name.
+                ?user u:lastname ?lastname.
+                ?tweet t:id ${uuid}.
+            }
+        `
+    },
+    insertTweet(uuid, content, user) {
+        return `
+            PREFIX u: <http://localhost:3000/user/>
+            PREFIX t: <http://localhost:3000/tweet/>
+
+            INSERT DATA {
+                <http://localhost:3000/tweet/${uuid}/> t:id ${uuid}.
+                <http://localhost:3000/tweet/${uuid}/> t:content "${content}".
+                <http://localhost:3000/tweet/${uuid}/> t:user <http://localhost:3000/users/${user}/> .
+            }
+        `
+    },
+    getTweets() {
+        return `
+            PREFIX u: <http://localhost:3000/user/>
+            PREFIX t: <http://localhost:3000/tweet/>
+
+            SELECT ?tweet ?id ?content ?user ?name ?lastname ?uid
+            WHERE {
+                ?tweet t:id ?id.
+                ?tweet t:content ?content.
+                ?tweet t:user ?user.
+                ?user u:name ?name.
+                ?user u:lastname ?lastname.
+                ?user u:id ?uid.
+            }
+        `
+    },
+    getTweet(uuid) {
+        return `
+                PREFIX p: <http://localhost:3000/user/>
+                PREFIX t: <http://localhost:3000/tweet/>
+
+                SELECT ?tweet ?id ?content ?user ?name ?lastname
+                WHERE {
+                    ?tweet t:id ?id.
+                    ?tweet t:content ?content.
+                    ?tweet t:user ?user.
+                    ?user p:name ?name.
+                    ?user p:lastname ?lastname.
+                    ?tweet t:id ${uuid} .
+                }
+            `
+    },
+    updateTweet(oldID, content, user) {
+        return `
+                PREFIX p: <http://localhost:3000/user/>
+                PREFIX t: <http://localhost:3000/tweet/>
+
+                delete { ?tweet t:id ${oldID} . ?tweet t:content ?content. ?tweet t:user ?user }
+                insert { <${this.identifier}tweet/${oldID}/> t:id ${oldID} . <${this.identifier}tweet/${oldID}/> t:content "${content}". <${this.identifier}tweet/${oldID}/> t:user <http://localhost:3000/users/${user}/> }
+                where {
+                    ?tweet t:id ${oldID} .
+                    ?tweet t:content ?content.
+                    ?tweet t:user ?user .
+                }
+            `
+    },
+    deleteTweet(uuid) {
+        return `
+                PREFIX t: <http://localhost:3000/tweet/>
+
+                delete { ?tweet t:id ?id. ?tweet t:content ?content. ?tweet t:user ?user }
+                where {
+                    ?tweet t:id ${uuid} .
+                    ?tweet t:content ?content.
+                    ?tweet t:user ?user.
+                }
+            `
+    },
+    getTweetsFromUser(uuid) {
+        return `
+                PREFIX p: <http://localhost:3000/user/>
+                PREFIX t: <http://localhost:3000/tweet/>
+
+                SELECT ?tweet ?id ?content ?user ?name ?lastname
+                WHERE {
+                    ?tweet t:user ?user.
+                    ?user p:name ?name.
+                    ?user p:lastname ?lastname.
+                    ?tweet t:id ?id .
+                    ?tweet t:content ?content.
+                    ?user p:id ${uuid} .
+                }
+        `
+    }

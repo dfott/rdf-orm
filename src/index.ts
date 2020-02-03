@@ -1,47 +1,39 @@
-interface SchemaList {
-   [prefix: string]: string,
-}
-interface Attribute {
-    type: string;
-    schema: string;
-}
-interface AttributeList {
-    [attrName: string]: Attribute
-}
-interface Schema {
-    schemas: SchemaList;
-    attributes: AttributeList;
-}
+import { RDF } from "./Model";
 
 const schemas = {
-    s: 'https://schemas.com/',
-    r: 'https://rdf.com/',
+    s: 'http://schemas.org/',
+    rdf: 'http://rdf.com/',
 };
 
-const Person = {
+const PersonSchema = {
     schemas,
+    type: 'Person',
+    typeSchema: schemas.s,
     attributes: {
+        id: {
+            identifier: true,
+            type: 'id',
+            prefix: 'rdf',
+        },
         name: {
-            type: 'firstName',
-            schema: schemas.s,
+            type: 'firstname',
+            prefix:'s'
         },
         omega: {
-            type: 'NewType',
-            schema: schemas.r,
+            type: 'omeaglul',
+            prefix: 's',
         },
-    }
+    },
 };
 
-export class RDFModel {
-    private schemas: SchemaList;
-    private attributes: AttributeList;
+const Person = RDF.createModel(PersonSchema);
 
-    constructor(schema: Schema) {
-        this.schemas = schema.schemas;
-        this.attributes = schema.attributes;
-    }
-}
+const user = new Person({ name: 'daniel', omega: 'lul', id: 1240});
 
-const Model = new RDFModel(Person);
+console.log(user.save());
 
+user.values.name = 'peter';
+user.values.omega = 'omaee';
+user.values.id = 99;
 
+console.log(user.save());
