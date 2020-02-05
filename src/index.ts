@@ -7,11 +7,10 @@ const schemas = {
 
 const PersonSchema = {
     schemas,
-    type: 'Person',
-    typeSchema: schemas.s,
-    attributes: {
+    resourceType: 'Person',
+    resourceSchema: schemas.s,
+    properties: {
         id: {
-            identifier: true,
             type: 'id',
             prefix: 'rdf',
         },
@@ -28,12 +27,13 @@ const PersonSchema = {
 
 const Person = RDF.createModel(PersonSchema);
 
-const user = new Person({ name: 'daniel', omega: 'lul', id: 1240});
+// const user = new Person({identifier: 123, name: 'peter', omega: 'ciaoi', id: 11});
 
-console.log(user.save());
+// console.log(user.save(true));
 
-user.values.name = 'peter';
-user.values.omega = 'omaee';
-user.values.id = 99;
+Person.find();
 
-console.log(user.save());
+function createUser(name: string, omega: string, id: number) {
+    const user = new Person({identifier: name+omega, name, omega, id});
+    user.save(true);
+}
