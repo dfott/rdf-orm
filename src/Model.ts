@@ -2,25 +2,26 @@ export interface SchemaList {
     [prefix: string]: string,
 }
 
-export interface Attribute {
+export interface Property {
     type: string;
     prefix: string;
     identifier?: boolean;
 }
 
-export interface AttributeList {
-    [attrName: string]: Attribute
+export interface PropertyList {
+    [propertyName: string]: Property;
 }
 
-export interface AttributeValues {
-    [attrName: string]: any
+export interface PropertyValues {
+    identifier: string;
+    [propertyName: string]: any;
 }
 
 export interface Schema {
-    type: string;
-    typeSchema: string;
+    resourceType: string;
+    resourceSchema: string;
     schemas: SchemaList;
-    attributes: AttributeList;
+    properties: PropertyList;
 }
 
 import { Request} from "./Request";
@@ -33,12 +34,12 @@ export class RDF {
         return class Model {
 
             private schema = schema;
-            public values: AttributeValues;
+            public values: PropertyValues;
 
             private query: QueryBuilder;
             private edited = false;
 
-            constructor(values: AttributeValues) {
+            constructor(values: PropertyValues) {
                this.values = values;
                this.query = new QueryBuilder(this.schema, this.values);
             }
@@ -53,6 +54,7 @@ export class RDF {
             public static async find() {
                 const query = QueryBuilder.generateFind(schema);
                 const result = await request.query(query);
+                console.log(query);
                 console.log(result);
             }
 
@@ -71,18 +73,19 @@ export class QueryBuilder {
     private readonly identifier: any;
     private readonly attributeSelectionList: string[];
 
+
     private readonly schemas: SchemaList;
-    private readonly attributes: AttributeList;
+    private readonly attributes: PropertyList;
     private readonly typeSchema: string;
     private readonly type: string;
 
-    private readonly values: AttributeValues;
+    private readonly values: PropertyValues;
 
-    constructor(schema: Schema, values: AttributeValues) {
+    constructor(schema: Schema, values: PropertyValues) {
         this.schemas = schema.schemas;
-        this.attributes = schema.attributes;
-        this.typeSchema = schema.typeSchema;
-        this.type = schema.type;
+        this.attributes = schema.properties;
+        this.typeSchema = schema.resourceSchema;
+        this.type = schema.resourceType;
         this.values = { ...values };
 
         this.prefixString = StringGenerator.generatePrefixString(this.schemas);
@@ -93,7 +96,7 @@ export class QueryBuilder {
             return `?${this.type} ${attribute.prefix}:${attribute.type} ${attribute.identifier ? this.values[key] : `?${attribute.type}`}`;
         }).join(' . ');
 
-        this.attributeSelectionList = StringGenerator.generateAttributeSelectionList(schema.attributes);
+        this.attributeSelectionList = StringGenerator.generateAttributeSelectionList(schema.properties);
     }
 
     generateCreate() : string {
@@ -101,13 +104,13 @@ export class QueryBuilder {
         const insertString = Object.keys(this.attributes).map(key => {
             const attribute = this.attributes[key];
             const value = typeof this.values[key] === 'string' ? `"${this.values[key]}"`: this.values[key];
-            return `<${this.typeSchema}${this.type}/${this.values[this.identifier]}> ${attribute.prefix}:${attribute.type} ${value}`;
+            return `<${this.typeSchema}${this.type}/${this.values.identifier}> ${attribute.prefix}:${attribute.type} ${value}`;
         }).join(' . ');
 
         return `${this.prefixString}\r\nINSERT DATA\r\n \t{ ${insertString} }\r\n`;
     }
 
-    generateUpdate(newValues: AttributeValues) : string{
+    generateUpdate(newValues: PropertyValues) : string{
         const insertString = Object.keys(this.attributes).map(key => {
             const attribute = this.attributes[key];
             const value = typeof newValues[key] === 'string' ? `"${newValues[key]}"`: newValues[key];
@@ -122,16 +125,16 @@ export class QueryBuilder {
 
     public static generateFind(schema: Schema): string {
 
-        const selectString = StringGenerator.generateAttributeSelectionList(schema.attributes).join(' ');
+        const selectString = StringGenerator.generateAttributeSelectionList(schema.properties).join(' ');
 
-        const whereString = Object.keys(schema.attributes)
+        const whereString = Object.keys(schema.properties)
             .map(key => {
-                const attribute = schema.attributes[key];
-                return `?${schema.type} ${attribute.prefix}:${attribute.type} ?${attribute.type}`
+                const attribute = schema.properties[key];
+                return `?${schema.resourceType} ${attribute.prefix}:${attribute.type} ?${attribute.type}`
             }).join(' . ');
 
         return `${StringGenerator.generatePrefixString(schema.schemas)}\n
-            select ?${schema.type} ${selectString}
+            select ?${schema.resourceType} ${selectString}
             where { ${whereString} }`;
     }
 
@@ -145,7 +148,7 @@ class StringGenerator {
     }
 
     // --- TODO FILTERING -------
-    public static generateAttributeSelectionList(attributes: AttributeList) : string[] {
+    public static generateAttributeSelectionList(attributes: PropertyList) : string[] {
         return Object.keys(attributes)
             .map(key => {
                 return `?${attributes[key].type}`
