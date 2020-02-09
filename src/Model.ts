@@ -8,7 +8,7 @@ export interface SchemaList {
 export interface Property {
     type: string;
     prefix: string;
-    identifier?: boolean;
+    isKey?: boolean;
 }
 
 export interface PropertyList {
@@ -45,16 +45,31 @@ export class RDF {
                this.query = new QueryBuilder(this.schema, this.values);
             }
 
-            public save(sendRequest: boolean) {
+            public async save(sendRequest: boolean) {
                 const query = this.edited ? this.query.generateUpdate(this.values) : this.query.generateCreate();
                 this.setEdited(true);
-                if (sendRequest) request.update(query);
+                if (sendRequest) await request.update(query);
+                console.log(query)
                 return query;
             }
 
             public static async find() {
                 const query = QueryBuilder.generateFind(schema);
                 const result = await request.query(query);
+                console.log(query);
+                console.log(result);
+            }
+
+            public static async findByKey(keyValue: any) {
+                const query = QueryBuilder.generateFindByKey(schema, keyValue);
+                const result = await request.query(query);
+                console.log(query);
+                console.log(result);
+            }
+
+            public static async delete() {
+               const query = QueryBuilder.generateDelete(schema);
+               const result = await request.update(query);
                 console.log(query);
                 console.log(result);
             }
