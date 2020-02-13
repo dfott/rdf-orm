@@ -15,21 +15,25 @@ export class Request {
             const result = await  axios.post(this.updateUri, params, {
                 headers,
             });
-            console.log('Succseful update');
+            console.log('Succsefully send update');
+            console.log(query);
         } catch (err) {
             console.log(err);
         }
     }
 
-    public async query(query: string) {
+    public async query(query: string, headers?: object) {
 
         try {
             const result = await axios.get(this.queryUrl, {
                 params: {
                     query,
-                },
+                }, headers
             });
-            return result.data.results.bindings;
+            console.log('Succsefully send query');
+            console.log(query);
+            const data = result.data.results;
+            return data ? data : result.data;
         } catch (err) {
             console.log(err);
         }

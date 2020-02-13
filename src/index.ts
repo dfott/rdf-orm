@@ -13,7 +13,7 @@ const PersonSchema = {
         id: {
             type: 'id',
             prefix: 'rdf',
-            identifier: true,
+            isKey: true,
         },
         name: {
             type: 'firstname',
@@ -30,21 +30,27 @@ const Person = RDF.createModel(PersonSchema);
 
 // const user = new Person({identifier: 123, name: 'peter', omega: 'ciaoi', id: 11});
 // console.log(user.save(true));
+//
 
+const lul = async() => {
+    console.log(await Person.findJSON());
+}
+
+lul();
 // Person.delete();
 // Person.findByIdentifier(11);
 // initData();
-Person.find();
+// Person.findByKey(11);
 // test();
 
 async function test() {
     const user = new Person({identifier: 123, name: 'peter', omega: 'ciaoi', id: 11});
-    console.log(await user.save(true));
-    await Person.find();
+    await user.save(true);
+    console.log(await Person.find());
     user.values.name = 'daniel';
     user.values.omega = 'lulul';
-    console.log(await user.save(true));
-    await Person.find();
+    await user.save(true);
+    console.log(await Person.find());
 }
 
 function createUser(name: string, omega: string, id: number) {
