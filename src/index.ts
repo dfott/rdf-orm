@@ -33,7 +33,7 @@ const Person = RDF.createModel(PersonSchema);
 //
 
 const lul = async() => {
-    console.log(await Person.findJSON());
+    console.log(await Person.find());
 }
 
 lul();
@@ -41,7 +41,7 @@ lul();
 // Person.findByIdentifier(11);
 // initData();
 // Person.findByKey(11);
-// test();
+test();
 
 async function test() {
     const user = new Person({identifier: 123, name: 'peter', omega: 'ciaoi', id: 11});

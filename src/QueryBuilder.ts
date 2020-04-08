@@ -5,10 +5,13 @@ export class QueryBuilder {
     private readonly rdfSchema = '<http://www.w3.org/1999/02/22-rdf-syntax-ns#>';
 
     private readonly prefixString: string;
+    // Query to find object by key
+    // example: ?Person rdf:id 1 . ?Person s:firstname ?firstname .....
     private readonly identifierString: string;
+    // Query to create object using all given values
     private readonly insertString: string;
 
-    private readonly identifier: any;
+    private readonly keyProperty: any;
     private readonly propertySelectionList: string[];
 
 
@@ -27,7 +30,7 @@ export class QueryBuilder {
         this.values = { ...values };
 
         this.prefixString = StringGenerator.generatePrefixString(this.schemas);
-        this.identifier = Object.keys(this.properties).find(key => this.properties[key].isKey);
+        this.keyProperty = Object.keys(this.properties).find(key => this.properties[key].isKey);
 
         this.identifierString = StringGenerator.generateIdentifierString(this.properties, this.values, this.resourceType);
 
@@ -43,7 +46,7 @@ export class QueryBuilder {
     generateUpdate(newValues: PropertyValues) : string{
         const insertString = StringGenerator.generateInsertString(this.properties, newValues, this.resourceSchema, this.resourceType);
         const whereString = StringGenerator.generateWhereString(this.properties, this.resourceType);
-        const whereConditionString = StringGenerator.generateWhereConditionString(this.properties, this.resourceType, { id: this.values[this.identifier] });
+        const whereConditionString = StringGenerator.generateWhereConditionString(this.properties, this.resourceType, { id: this.values[this.keyProperty] });
 
         return `\r\n${this.prefixString}\n
             delete { ${whereString} . ${whereConditionString} }

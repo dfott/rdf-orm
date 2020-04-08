@@ -1,5 +1,5 @@
-import {QueryBuilder} from "./QueryBuilder";
-import {Request} from "./Request";
+import { QueryBuilder } from "./QueryBuilder";
+import { Request } from "./Request";
 
 export interface SchemaList {
     [prefix: string]: string,
