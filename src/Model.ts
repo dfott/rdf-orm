@@ -1,5 +1,5 @@
 import { QueryBuilder } from "./QueryBuilder";
-import { Request } from "./Request";
+import { RDFRequest } from "./RDFRequest";
 
 export interface SchemaList {
     [prefix: string]: string,
@@ -31,11 +31,22 @@ export interface FindParameters {
     [propertyName: string]: string | number;
 }
 
-const request = new Request('http://localhost:3030/test/query', 'http://localhost:3030/test/update');
+export interface RawModel {
+    [propertyName: string] : {
+        type: string;
+        value: string;
+    }
+}
+
+export interface ObjectValues {
+    [propertyName: string]: string;
+}
+
+// const request = new RDFRequest('http://localhost:3030/test/query', 'http://localhost:3030/test/update');
 
 export class RDF {
 
-    public static createModel(schema: Schema): any {
+    public static createModel(schema: Schema, request: RDFRequest): any {
         return class Model {
 
             private schema = schema;
@@ -50,16 +61,21 @@ export class RDF {
             }
 
             public async save(sendRequest: boolean) {
-                const query = this.edited ? this.query.generateUpdate(this.values) : this.query.generateCreate();
-                this.setEdited(true);
-                if (sendRequest) await request.update(query);
-                // console.log(query)
-                return query;
+                try {
+                    const query = this.edited ? this.query.generateUpdate(this.values) : this.query.generateCreate();
+                    this.setEdited(true);
+                    if (sendRequest) await request.update(query);
+                    // console.log(query)
+                    return query;
+                } catch (e) {
+                    console.log(e)
+                }
             }
 
             public static async find(findParameters?: FindParameters) {
                 const query = QueryBuilder.generateFind(schema, findParameters);
-                return await request.query(query);
+                const result = await request.query(query);
+                return result.bindings;
                 // console.log(query);
                 // console.log(result);
             }
@@ -69,6 +85,17 @@ export class RDF {
                 return await request.query(query);
                 // console.log(query);
                 // console.log(result);
+            }
+
+            public static async findByIdentifier(identifier: string) {
+                const query = QueryBuilder.generateFindByIdentifier(schema, identifier);
+                const result = await request.query(query);
+                // return result.bindings[0];
+                const objValues: PropertyValues = { identifier };
+                Object.keys(result.bindings[0]).forEach(prop => objValues[prop] = result.bindings[0][prop].value); 
+                const rdfObj = new RDFObject(objValues, schema, request);
+                return rdfObj;
+                // return this.generateModelObject(result.bindings[0]);
             }
 
             public static async findByKey(keyValue: string | number) {
@@ -88,7 +115,28 @@ export class RDF {
             private setEdited(edited: boolean) {
                 this.edited = edited;
             }
+
         }
     }
 }
 
+export class RDFObject {
+
+    private query: QueryBuilder;
+
+    constructor(public values: PropertyValues, public schema: Schema, public request: RDFRequest) {
+        this.query = new QueryBuilder(schema, values);
+    }
+
+    public async save() {
+        try {
+            const query = this.query.generateUpdate(this.values);
+            await this.request.update(query);
+            console.log(query)
+            return query;
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+}
