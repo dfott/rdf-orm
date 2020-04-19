@@ -1,4 +1,4 @@
-import {FindParameters, Property, PropertyList, PropertyValues, Schema, SchemaList} from "./Model";
+import {FindParameters, Property, PropertyList, PropertyValues, Schema, PrefixList} from "./Model";
 
 export class QueryBuilder {
 
@@ -15,7 +15,7 @@ export class QueryBuilder {
     private readonly propertySelectionList: string[];
 
 
-    private readonly schemas: SchemaList;
+    private readonly prefixes: PrefixList;
     private readonly properties: PropertyList;
     private readonly resourceSchema: string;
     private readonly resourceType: string;
@@ -23,13 +23,13 @@ export class QueryBuilder {
     private readonly values: PropertyValues;
 
     constructor(schema: Schema, values: PropertyValues) {
-        this.schemas = schema.schemas;
+        this.prefixes = schema.prefixes;
         this.properties = schema.properties;
         this.resourceSchema = schema.resourceSchema;
         this.resourceType = schema.resourceType;
         this.values = { ...values };
 
-        this.prefixString = StringGenerator.generatePrefixString(this.schemas);
+        this.prefixString = StringGenerator.generatePrefixString(this.prefixes);
         this.keyProperty = Object.keys(this.properties).find(key => this.properties[key].isKey);
 
         this.identifierString = StringGenerator.generateIdentifierString(this.properties, this.values, this.resourceType);
@@ -52,14 +52,15 @@ export class QueryBuilder {
     generateUpdate(newValues: PropertyValues) : string{
         const insertString = StringGenerator.generateInsertString(this.properties, newValues, this.resourceSchema, this.resourceType);
         const whereString = StringGenerator.generateWhereString(this.properties, this.resourceType);
-        const whereConditionString = StringGenerator.generateWhereConditionString(this.properties, this.resourceType, { id: this.values[this.keyProperty] });
+        // const whereConditionString = StringGenerator.generateWhereConditionString(this.properties, this.resourceType, { id: this.values[this.keyProperty] });
 
-        const firstProp = this.properties[Object.keys(this.properties)[0]];
+        const firstPropName = Object.keys(this.properties)[0];
+        const firstProp = this.properties[firstPropName];
 
         return `\r\n${this.prefixString}\n
             delete { ${whereString} }
             insert { ${insertString} }
-            where {  ${whereString} . <${this.resourceSchema}${this.resourceType}/${this.values.identifier}> ${firstProp.prefix}:${firstProp.type} ?${firstProp.type}}`;
+            where {  ${whereString} . <${this.resourceSchema}${this.resourceType}/${this.values.identifier}> ${firstProp.prefix}:${firstPropName} ?${firstPropName}}`;
     }
 
     public static generateFind(schema: Schema, findParameters?: FindParameters): string {
@@ -70,7 +71,7 @@ export class QueryBuilder {
             whereConditionString = StringGenerator.generateWhereConditionString(schema.properties, schema.resourceType, findParameters);
         }
 
-        return `${StringGenerator.generatePrefixString(schema.schemas)}\n
+        return `${StringGenerator.generatePrefixString(schema.prefixes)}\n
             select ?${schema.resourceType} ${selectString} ?type
             where { ${whereString} .  ${whereConditionString} }`;
     }
@@ -83,7 +84,7 @@ export class QueryBuilder {
             whereConditionString = StringGenerator.generateWhereConditionString(schema.properties, schema.resourceType, findParameters);
         }
 
-        return `${StringGenerator.generatePrefixString(schema.schemas)}\n
+        return `${StringGenerator.generatePrefixString(schema.prefixes)}\n
             construct { ${whereString} }
             where { ${whereString} .  ${whereConditionString} }`;
     }
@@ -92,10 +93,11 @@ export class QueryBuilder {
         const selectString = StringGenerator.generateAttributeSelectionList(schema.properties).join(' ');
         const whereString = StringGenerator.generateWhereString(schema.properties, schema.resourceType);
 
-        const firstProp = schema.properties[Object.keys(schema.properties)[0]];
-        return `${StringGenerator.generatePrefixString(schema.schemas)}\n
+        const firstPropName = Object.keys(schema.properties)[0]
+        const firstProp = schema.properties[firstPropName];
+        return `${StringGenerator.generatePrefixString(schema.prefixes)}\n
             select ${selectString} ?type
-            where { ${whereString} . <${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstProp.prefix}:${firstProp.type} ?${firstProp.type}}`;
+            where { ${whereString} . <${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstProp.prefix}:${firstPropName} ?${firstPropName}}`;
     }
 
     public static generateFindByKey(schema: Schema, keyValue: string | number): string {
@@ -104,14 +106,14 @@ export class QueryBuilder {
         const whereString = StringGenerator.generateWhereString(schema.properties, schema.resourceType);
         const whereConditionString = StringGenerator.generateWhereConditionString(schema.properties, schema.resourceType, { [keyProp]: keyValue });
 
-        return `${StringGenerator.generatePrefixString(schema.schemas)}\n
+        return `${StringGenerator.generatePrefixString(schema.prefixes)}\n
             select ?${schema.resourceType} ${selectString} ?type
             where { ${whereString} . ${whereConditionString} }`;
     }
 
     public static generateDelete(schema: Schema): string {
        const whereString = StringGenerator.generateWhereString(schema.properties, schema.resourceType);
-       return `${StringGenerator.generatePrefixString(schema.schemas)}\r\ndelete { ${whereString} }\r\nwhere { ${whereString} }\r\n`;
+       return `${StringGenerator.generatePrefixString(schema.prefixes)}\r\ndelete { ${whereString} }\r\nwhere { ${whereString} }\r\n`;
     }
 
     private iterateKeys(keys: string[], callback: Function): string[] {
@@ -127,10 +129,10 @@ export class QueryBuilder {
 class StringGenerator {
     public static defaultRDFPrefix = 'rdf';
 
-    public static generatePrefixString(schemas: SchemaList): string {
+    public static generatePrefixString(prefixes: PrefixList): string {
         // ---- TODO CHECK REGEX FOR RDF PREFIX -----------
-        return Object.keys(schemas)
-            .map(prefix => `PREFIX ${prefix}: <${schemas[prefix]}>`)
+        return Object.keys(prefixes)
+            .map(prefix => `PREFIX ${prefix}: <${prefixes[prefix]}>`)
             .join('\n')
             // .concat(`\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n`);
     }
@@ -140,12 +142,12 @@ class StringGenerator {
             const property = properties[key];
             if (keyProp !== undefined) {
                 if (keyProp === key) {
-                    return `?${resourceType} ${property.prefix}:${property.type} ${keyValue}`;
+                    return `?${resourceType} ${property.prefix}:${key} ${keyValue}`;
                 } else {
-                    return `?${resourceType} ${property.prefix}:${property.type} ?${property.type}`;
+                    return `?${resourceType} ${property.prefix}:${key} ?${key}`;
                 }
             } else {
-                return `?${resourceType} ${property.prefix}:${property.type} ?${property.type}`;
+                return `?${resourceType} ${property.prefix}:${key} ?${key}`;
             }
         }).join(' . ').concat(` . ?${resourceType} <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type`)
     }
@@ -154,7 +156,7 @@ class StringGenerator {
         return Object.keys(findParameters).map((key: string) => {
             const property = properties[key];
             const value = typeof findParameters[key] === 'string' ? `"${findParameters[key]}"`: findParameters[key];
-            return `?${resourceType} ${property.prefix}:${property.type} ${value}`;
+            return `?${resourceType} ${property.prefix}:${key} ${value}`;
         }).join(' . ');
     }
 
@@ -162,14 +164,14 @@ class StringGenerator {
     public static generateAttributeSelectionList(properties: PropertyList) : string[] {
         return Object.keys(properties)
             .map(key => {
-                return `?${properties[key].type}`
+                return `?${key}`
             })
     }
 
     public static generateIdentifierString(properties: PropertyList, values: PropertyValues, resourceType: string): string {
         return Object.keys(properties).map(key => {
             const property = properties[key];
-            return `?${resourceType} ${property.prefix}:${property.type} ${property.isKey ? values[key] : `?${property.type}`}`;
+            return `?${resourceType} ${property.prefix}:${key} ${property.isKey ? values[key] : `?${key}`}`;
         }).join(' . ');
     }
 
@@ -181,7 +183,7 @@ class StringGenerator {
                 throw Error(`No value given for property ${key}`);
             }
             const uri = `${resourceSchema}${resourceType}/${values.identifier}`;
-            return `<${uri}> ${property.prefix}:${property.type} ${value}`;
+            return `<${uri}> ${property.prefix}:${key} ${value}`;
         }).join(' . ').concat(` . <${resourceSchema}${resourceType}/${values.identifier}> a "${resourceType}"`);
     }
 

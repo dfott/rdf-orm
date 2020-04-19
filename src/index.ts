@@ -1,27 +1,23 @@
 import { RDF } from "./Model";
 import { RDFRequest } from "./RDFRequest";
 
-const schemas = {
+const prefixes = {
     s: 'http://schemas.org/',
     rdf: 'http://rdf.com/',
 };
 
 const PersonSchema = {
-    schemas,
+    prefixes,
     resourceType: 'Person',
-    resourceSchema: schemas.s,
+    resourceSchema: prefixes.s,
     properties: {
         id: {
-            type: 'id',
             prefix: 'rdf',
-            isKey: true,
         },
         firstname: {
-            type: 'firstname',
             prefix:'s'
         },
-        omeaglul: {
-            type: 'omeaglul',
+        lastname: {
             prefix: 's',
         },
     },
@@ -45,15 +41,18 @@ const lul = async() => {
     // console.log(user);
 }
 
-const tt = async () => {
-    // const user = new Person({identifier: 99, firstname: "Daniel", omeaglul: "Fott", id: 99});
+(async function() {
+
+    // const user = new Person({ identifier: "DanielFott", id: 1, firstname: "Daniel", lastname: "Fott"});
     // await user.save(true);
+    const user = await Person.findByIdentifier("DanielFott");
+    // console.log(user)
+    user.values.id = 123;
+    await user.save();
+    console.log(await Person.find());
+}())
 
-    // console.log(await Person.findByIdentifier(99));
-    console.log(await Person.findByKey(99));
-}
 
-tt();
 // lul();
 // Person.delete();
 // Person.findByIdentifier(11);

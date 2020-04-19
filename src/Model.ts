@@ -1,12 +1,11 @@
 import { QueryBuilder } from "./QueryBuilder";
 import { RDFRequest } from "./RDFRequest";
 
-export interface SchemaList {
+export interface PrefixList {
     [prefix: string]: string,
 }
 
 export interface Property {
-    type: string;
     prefix: string;
     isKey?: boolean;
 }
@@ -23,7 +22,7 @@ export interface PropertyValues {
 export interface Schema {
     resourceType: string;
     resourceSchema: string;
-    schemas: SchemaList;
+    prefixes: PrefixList;
     properties: PropertyList;
 }
 
@@ -92,15 +91,19 @@ export class RDF {
                 const result = await request.query(query);
                 // return result.bindings[0];
                 const objValues: PropertyValues = { identifier };
-                Object.keys(result.bindings[0]).forEach(prop => objValues[prop] = result.bindings[0][prop].value); 
-                const rdfObj = new RDFObject(objValues, schema, request);
-                return rdfObj;
+                try {
+                    Object.keys(result.bindings[0]).forEach(prop => objValues[prop] = result.bindings[0][prop].value); 
+                    const rdfObj = new RDFObject(objValues, schema, request);
+                    return rdfObj;
+                } catch (e) {
+                    return {};
+                }
                 // return this.generateModelObject(result.bindings[0]);
             }
 
             public static async findByKey(keyValue: string | number) {
                 const query = QueryBuilder.generateFindByKey(schema, keyValue);
-                const result = await request.query(query, { 'Content-Type': 'application/json+ld'});
+                const result = await request.query(query);
                 // console.log(query);
                 // console.log(result);
             }
