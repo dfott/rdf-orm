@@ -10,7 +10,7 @@ const prefixList = {
 const propertyList = {
     firstname: { prefix: "rdf" },
     lastname: { prefix: "rdf" },
-    age: { prefix: "s" }
+    age: { prefix: "schema" }
 } as PropertyList;
 
 const propertyValues = {

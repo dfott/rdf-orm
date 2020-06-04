@@ -22,9 +22,9 @@ PREFIX schema: <http://schema.org/>`;
 
     it("should generate a basic graph pattern where string, which will be used in the where clause of a SparQL query to match it against the specified graph", function() {
         const expectedWhereString = 
-`?Person rdf:firstname ?firstname
-?Person rdf:lastname ?lastname
-?Person s:age ?age`;
+`?Person rdf:firstname ?firstname .
+?Person rdf:lastname ?lastname .
+?Person schema:age ?age .`;
         assert.equal(StringGenerator.whereString(data.propertyList, data.resourceType), expectedWhereString);
     })
 
@@ -34,7 +34,7 @@ PREFIX schema: <http://schema.org/>`;
 `<${uri}> a <${data.resourceSchema}${data.resourceType}> .
 <${uri}> rdf:firstname "${data.propertyValues.firstname}" .
 <${uri}> rdf:lastname "${data.propertyValues.lastname}" .
-<${uri}> s:age ${data.propertyValues.age} .`
+<${uri}> schema:age ${data.propertyValues.age} .`
 
         assert.equal(StringGenerator.insertString(data.propertyList, data.propertyValues, data.resourceSchema, data.resourceType), expectedInsertString);
     });

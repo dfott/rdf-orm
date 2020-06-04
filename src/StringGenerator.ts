@@ -32,7 +32,7 @@ export class StringGenerator {
         return Object.keys(properties).map((propertyName: string) => {
             const prefix = properties[propertyName].prefix
             return `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
-        }).join("\n");
+        }).join(" .\n").concat(" .");
     }
 
     /**

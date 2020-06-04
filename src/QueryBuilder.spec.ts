@@ -21,7 +21,7 @@ ${StringGenerator.insertString(data.propertyList, data.propertyValues, data.reso
 
     it("should build a select query, that would select every tuple that is modelling the specified schema", function() {
         const expectedSelectString = `${StringGenerator.prefixString(data.prefixList)}\n\n`
-            .concat(`select { ${StringGenerator.selectString(data.propertyList)} }\n`)
+            .concat(`select ${StringGenerator.selectString(data.propertyList)}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(data.propertyList, data.resourceType)}\n`)
             .concat(`}`);
