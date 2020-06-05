@@ -22,10 +22,24 @@ export class QueryBuilder {
      */
     public static buildFind(schema: Schema): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
-            .concat(`select ${StringGenerator.selectString(schema.properties)}\n`)
+            .concat(`select ${StringGenerator.selectString(schema.properties, schema.resourceType)}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
             .concat(`}`);
+    }
+
+    /**
+     * Builds a delete query, which would delete every tupel that is modelled by the given schema
+     * @param schema - schema that provides the necessary information about the model
+     */
+    public static buildDelete(schema: Schema): string {
+        const whereGraphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`delete {\n`)
+            .concat(whereGraphPattern)
+            .concat(`\n} where {\n`)
+            .concat(whereGraphPattern)
+            .concat(`\n}`);
     }
 
 

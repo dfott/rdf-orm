@@ -17,10 +17,10 @@ export class StringGenerator {
      * returned in the result.
      * @param propertyList - List of every property and its prefix
      */
-    public static selectString(propertyList: PropertyList): string {
-        return Object.keys(propertyList).map((propertyName: string) => {
-            return `?${propertyName}`;
-        }).join(" ");
+    public static selectString(propertyList: PropertyList, resourceType: string): string {
+        return Object.keys(propertyList).map((propertyName: string, index: number) => {
+            return index == 0 ? `?${resourceType} ?${propertyName}` : `?${propertyName}`;
+        }).join(" ").concat(" ?type");
     }
 
     /**
@@ -32,7 +32,7 @@ export class StringGenerator {
         return Object.keys(properties).map((propertyName: string) => {
             const prefix = properties[propertyName].prefix
             return `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
-        }).join(" .\n").concat(" .");
+        }).join(" .\n").concat(` .\n?${resourceType} a ?type .`);
     }
 
     /**

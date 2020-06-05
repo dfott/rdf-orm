@@ -15,7 +15,6 @@ export class RDFResult {
     public async save(): Promise<string> {
         const insertQuery = this.builder.buildInsert();
         const result = await request.update(insertQuery);
-        console.log(result);
         return Promise.resolve(insertQuery);
     }
 

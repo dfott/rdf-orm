@@ -26,8 +26,8 @@ export class RDFRequest {
                     query,
                 }, headers
             });
-            console.log('Succsefully send query');
-            console.log(query);
+            // console.log('Succsefully send query');
+            // console.log(query);
             const data = result.data.results;
             return data ? data : result.data;
         } catch (err) {

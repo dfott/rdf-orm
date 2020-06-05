@@ -16,15 +16,16 @@ PREFIX schema: <http://schema.org/>`;
     })
 
     it("should generate a select string, which would identify every available property in the select clause of a SparQL query", function() {
-        const expectedSelectionString = "?firstname ?lastname ?age";
-        assert.equal(StringGenerator.selectString(data.propertyList), expectedSelectionString);
+        const expectedSelectionString = "?Person ?firstname ?lastname ?age ?type";
+        assert.equal(StringGenerator.selectString(data.propertyList, data.resourceType), expectedSelectionString);
     })
 
     it("should generate a basic graph pattern where string, which will be used in the where clause of a SparQL query to match it against the specified graph", function() {
         const expectedWhereString = 
 `?Person rdf:firstname ?firstname .
 ?Person rdf:lastname ?lastname .
-?Person schema:age ?age .`;
+?Person schema:age ?age .
+?Person a ?type .`;
         assert.equal(StringGenerator.whereString(data.propertyList, data.resourceType), expectedWhereString);
     })
 
