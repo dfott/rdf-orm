@@ -6,6 +6,7 @@ import { RDFRequest } from "./RDFRequest"
 interface IRDFModel {
     create(values: PropertyValues): RDFResult
     find(): Promise<RDFResult>
+    findByIdentifier(identifier: string): Promise<RDFResult>
     delete(): Promise<boolean>
 }
 
@@ -14,7 +15,7 @@ export class RDF {
 
     public static createModel(schema: Schema): IRDFModel {
         return new class Model implements IRDFModel {
-            
+
             /**
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them
              * in a list of object.
@@ -26,6 +27,15 @@ export class RDF {
                     new RDFResult(schema, {} as PropertyValues, result.bindings)
                 );
             }
+
+            async findByIdentifier(identifier: string): Promise<RDFResult> {
+                const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
+                const result = await request.query(selectQuery); 
+                return Promise.resolve(
+                    new RDFResult(schema, {} as PropertyValues, result.bindings)
+                );
+            }
+            
 
             /**
              * Createas a RDFResult Object, which can then be used to for example save the given values in a triplestore.

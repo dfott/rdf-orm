@@ -32,4 +32,12 @@ describe("RDF", function() {
         assert.isArray(persons);
         assert.lengthOf(persons, 0);
     })
+    it("should find a resource and its properties, based on the given identifier", async function() {
+        const daniel = Person.create(data.propertyValues);
+        await daniel.save()
+
+        const foundDaniel = await Person.findByIdentifier("DanielFott");
+        console.log(foundDaniel.result);
+        assert.equal("", "");
+    })
 })

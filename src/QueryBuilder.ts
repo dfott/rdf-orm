@@ -28,6 +28,20 @@ export class QueryBuilder {
             .concat(`}`);
     }
 
+    public static buildFindByIdentifier(schema: Schema, identifier: string): string {
+        const graphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
+        const firstProp = Object.keys(schema.properties)[0];
+        const firstPropPrefix = schema.properties[firstProp].prefix;
+        const whereString = `${graphPattern}\n`
+            .concat(`<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`);
+        
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`select ${StringGenerator.selectString(schema.properties, schema.resourceType)}\n`)
+            .concat(`where {\n`)
+            .concat(`${whereString}\n`)
+            .concat(`}`);
+    }
+
     /**
      * Builds a delete query, which would delete every tupel that is modelled by the given schema
      * @param schema - schema that provides the necessary information about the model
