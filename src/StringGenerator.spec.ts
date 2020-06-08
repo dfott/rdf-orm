@@ -30,13 +30,20 @@ PREFIX schema: <http://schema.org/>`;
     })
 
     it("should generate an insert string with RDF triples, that will be inserted into a triplestore", function() {
-        const uri = `${data.resourceSchema}${data.resourceType}/${data.propertyValues.identifier}`;
+        const uri = `${data.resourceSchema}${data.resourceType}/${data.danielValues.identifier}`;
         const expectedInsertString = 
 `<${uri}> a <${data.resourceSchema}${data.resourceType}> .
-<${uri}> rdf:firstname "${data.propertyValues.firstname}" .
-<${uri}> rdf:lastname "${data.propertyValues.lastname}" .
-<${uri}> schema:age ${data.propertyValues.age} .`
+<${uri}> rdf:firstname "${data.danielValues.firstname}" .
+<${uri}> rdf:lastname "${data.danielValues.lastname}" .
+<${uri}> schema:age ${data.danielValues.age} .`
 
-        assert.equal(StringGenerator.insertString(data.propertyList, data.propertyValues, data.resourceSchema, data.resourceType), expectedInsertString);
+        assert.equal(StringGenerator.insertString(data.propertyList, data.danielValues, data.resourceSchema, data.resourceType), expectedInsertString);
     });
+
+    it("should generate a graph pattern, that identifies tupels, based on the given list of properties and values", function() {
+        const expectedGraphPattern = `?Person schema:age 20 .`;
+
+        assert.equal(StringGenerator.whereStringFiltered(data.propertyList, data.findParameterList, data.resourceType),
+            expectedGraphPattern);
+    })
 })

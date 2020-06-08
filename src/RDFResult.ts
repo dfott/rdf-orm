@@ -8,13 +8,13 @@ export class RDFResult {
 
     private builder: QueryBuilder;
 
-    constructor(private schema: Schema, private values: PropertyValues, public result?: any) {
+    constructor(private schema: Schema, private values: PropertyValues, public query?: string, public result?: any) {
         this.builder = new QueryBuilder(this.schema, this.values);
     }
 
     public async save(): Promise<string> {
         const insertQuery = this.builder.buildInsert();
-        const result = await request.update(insertQuery);
+        await request.update(insertQuery);
         return Promise.resolve(insertQuery);
     }
 

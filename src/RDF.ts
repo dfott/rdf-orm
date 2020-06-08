@@ -1,27 +1,28 @@
-import { PropertyValues, Schema } from "./Model"
+import { PropertyValues, Schema, FindParameters } from "./Model"
 import { RDFResult } from "./RDFResult"
 import { QueryBuilder } from "./QueryBuilder"
 import { RDFRequest } from "./RDFRequest"
 
 interface IRDFModel {
     create(values: PropertyValues): RDFResult
-    find(): Promise<RDFResult>
+    find(findParameters?: FindParameters): Promise<RDFResult>
     findByIdentifier(identifier: string): Promise<RDFResult>
-    delete(): Promise<boolean>
+    delete(findParameters?: FindParameters): Promise<boolean>
 }
 
-const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
+// const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
 export class RDF {
 
-    public static createModel(schema: Schema): IRDFModel {
+    public static createModel(schema: Schema, request: RDFRequest): IRDFModel {
         return new class Model implements IRDFModel {
 
             /**
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them
              * in a list of object.
              */
-            async find(): Promise<RDFResult> {
-                const selectQuery = QueryBuilder.buildFind(schema);
+            async find(findParameters?: FindParameters): Promise<RDFResult> {
+                const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
+                    QueryBuilder.buildFind(schema);
                 const result = await request.query(selectQuery);
                 return Promise.resolve(
                     new RDFResult(schema, {} as PropertyValues, result.bindings)
@@ -30,12 +31,12 @@ export class RDF {
 
             async findByIdentifier(identifier: string): Promise<RDFResult> {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
+                console.log(selectQuery)
                 const result = await request.query(selectQuery); 
                 return Promise.resolve(
                     new RDFResult(schema, {} as PropertyValues, result.bindings)
                 );
             }
-            
 
             /**
              * Createas a RDFResult Object, which can then be used to for example save the given values in a triplestore.
@@ -45,8 +46,9 @@ export class RDF {
                 return new RDFResult(schema, values);
             }
 
-            async delete(): Promise<boolean>{
-                const deleteQuery = QueryBuilder.buildDelete(schema);
+            async delete(findParameters?: FindParameters): Promise<boolean>{
+                const deleteQuery = findParameters ? QueryBuilder.buildDeleteFiltered(schema, findParameters) : 
+                    QueryBuilder.buildDelete(schema);
                 await request.update(deleteQuery);
                 return Promise.resolve(true);
             }

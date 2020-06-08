@@ -12,8 +12,8 @@ export class RDFRequest {
             const result = await axios.post(this.updateUri, params, {
                 headers,
             });
-            console.log('Succsefully send update');
-            console.log(query);
+            // console.log('Succsefully send update');
+            // console.log(query);
         } catch (err) {
             console.log(err);
         }

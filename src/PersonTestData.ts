@@ -1,4 +1,5 @@
-import { PrefixList, PropertyList, PropertyValues, Schema } from "./Model";
+import { PrefixList, PropertyList, PropertyValues, Schema, FindParameters } from "./Model";
+import { RDFRequest } from "./RDFRequest";
 
 const prefixList = {
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -13,15 +14,35 @@ const propertyList = {
     age: { prefix: "schema" }
 } as PropertyList;
 
-const propertyValues = {
+const danielValues = {
     identifier: "DanielFott",
     firstname: "Daniel",
     lastname: "Fott",
     age: 20
 } as PropertyValues;
 
+const peterValues = {
+    identifier: "PeterTest",
+    firstname: "Peter",
+    lastname: "Test",
+    age: 40
+} as PropertyValues;
+
+const guterValues = {
+    identifier: "GuterTest",
+    firstname: "Guter",
+    lastname: "Test",
+    age: 20
+} as PropertyValues;
+
+const findParameterList = {
+    age: 20,
+} as FindParameters
+
 const resourceSchema = prefixList.schema;
 const resourceType = "Person";
+
+const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
 
 const personSchema = {
     resourceSchema,
@@ -33,9 +54,13 @@ const personSchema = {
 export default {
     prefixList,
     propertyList,
-    propertyValues,
     resourceSchema,
+    findParameterList,
     resourceType,
     personSchema,
+    request,
+    danielValues,
+    peterValues,
+    guterValues,
 };
 

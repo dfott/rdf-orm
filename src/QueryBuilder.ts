@@ -1,4 +1,4 @@
-import { PropertyValues, Schema } from "./Model";
+import { PropertyValues, Schema, FindParameters } from "./Model";
 import { StringGenerator } from "./StringGenerator";
 
 export class QueryBuilder {
@@ -28,6 +28,15 @@ export class QueryBuilder {
             .concat(`}`);
     }
 
+    public static buildFindFiltered(schema: Schema, findParameters: FindParameters): string {
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`select ${StringGenerator.selectString(schema.properties, schema.resourceType)}\n`)
+            .concat(`where {\n`)
+            .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
+            .concat(`${StringGenerator.whereStringFiltered(schema.properties, findParameters, schema.resourceType)}\n`)
+            .concat(`}`);
+    }
+
     public static buildFindByIdentifier(schema: Schema, identifier: string): string {
         const graphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
         const firstProp = Object.keys(schema.properties)[0];
@@ -53,6 +62,17 @@ export class QueryBuilder {
             .concat(whereGraphPattern)
             .concat(`\n} where {\n`)
             .concat(whereGraphPattern)
+            .concat(`\n}`);
+    }
+
+    public static buildDeleteFiltered(schema: Schema, findParameters: FindParameters): string {
+        const whereGraphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`delete {\n`)
+            .concat(whereGraphPattern)
+            .concat(`\n} where {\n`)
+            .concat(whereGraphPattern)
+            .concat(`${StringGenerator.whereStringFiltered(schema.properties, findParameters, schema.resourceType)}\n`)
             .concat(`\n}`);
     }
 

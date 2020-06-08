@@ -1,4 +1,4 @@
-import { PrefixList, PropertyList, PropertyValues } from "./Model";
+import { PrefixList, PropertyList, PropertyValues, FindParameters } from "./Model";
 
 export class StringGenerator {
 
@@ -59,6 +59,15 @@ export class StringGenerator {
                 return `<${uri}> a <${resourceSchema}${resourceType}>`;
             }
         }).join(" .\n").concat(" .");
+    }
+
+    public static whereStringFiltered(properties: PropertyList, findParameters: FindParameters, resourceType: string) {
+        return Object.keys(findParameters).map((findParam: string) => {
+            const property = properties[findParam];
+            if (!property) throw Error(`Cannot filter by property ${findParam} as it is not a property of type ${resourceType}.`)
+            const value = typeof findParameters[findParam] === "string" ? `"${findParameters[findParam]}"` : findParameters[findParam];
+            return `?${resourceType} ${property.prefix}:${findParam} ${value} .`;
+        }).join("\n")
     }
 
 }
