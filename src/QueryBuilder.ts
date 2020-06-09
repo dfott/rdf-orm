@@ -80,5 +80,20 @@ export class QueryBuilder {
             .concat(`\n}`);
     }
 
+    public static buildDeleteByIdentifier(schema: Schema, identifier: string): string {
+        const whereGraphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
+        const firstProp = Object.keys(schema.properties)[0];
+        const firstPropPrefix = schema.properties[firstProp].prefix;
+        const whereString = `${whereGraphPattern}\n`
+            .concat(`<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`);
+
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`delete {\n`)
+            .concat(whereGraphPattern)
+            .concat(`\n} where {\n`)
+            .concat(whereString)
+            .concat(`\n}`);
+    }
+
 
 }

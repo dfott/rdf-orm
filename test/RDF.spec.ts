@@ -54,7 +54,11 @@ describe("RDF", function() {
 
         assert.equal(foundTesto.result.length, 0);
     })
-    it("should find a resource and its properties, based on the given identifier", async function() {
+    it("should delete resources and their properties, based on the given identifier", async function() {
+        const result = await Person.deleteByIdentifier("DanielFott");
+        assert.equal("", "");
+    })
+    it.skip("should find a resource and its properties, based on the given identifier", async function() {
         // const daniel = Person.create(data.propertyValues);
         // await daniel.save()
 

@@ -8,6 +8,7 @@ interface IRDFModel {
     find(findParameters?: FindParameters): Promise<RDFResult>
     findByIdentifier(identifier: string): Promise<RDFResult>
     delete(findParameters?: FindParameters): Promise<boolean>
+    deleteByIdentifier(identifier: string): Promise<boolean>
 }
 
 // const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
@@ -49,6 +50,12 @@ export class RDF {
             async delete(findParameters?: FindParameters): Promise<boolean>{
                 const deleteQuery = findParameters ? QueryBuilder.buildDeleteFiltered(schema, findParameters) : 
                     QueryBuilder.buildDelete(schema);
+                await request.update(deleteQuery);
+                return Promise.resolve(true);
+            }
+
+            async deleteByIdentifier(identifier: string): Promise<boolean> {
+                const deleteQuery = QueryBuilder.buildDeleteByIdentifier(schema, identifier);
                 await request.update(deleteQuery);
                 return Promise.resolve(true);
             }
