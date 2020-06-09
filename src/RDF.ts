@@ -23,18 +23,18 @@ export class RDF {
             async find(findParameters?: FindParameters): Promise<RDFResult> {
                 const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
-                const result = await request.query(selectQuery);
+                const result = await request.query(selectQuery, { "Accept": "application/ld+json" });
                 return Promise.resolve(
-                    new RDFResult(schema, {} as PropertyValues, result.bindings)
+                    new RDFResult(schema, {} as PropertyValues, result)
                 );
             }
 
             async findByIdentifier(identifier: string): Promise<RDFResult> {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
-                console.log(selectQuery)
-                const result = await request.query(selectQuery); 
+                // console.log(selectQuery)
+                const result = await request.query(selectQuery, { "Accept": "application/ld+json" }); 
                 return Promise.resolve(
-                    new RDFResult(schema, {} as PropertyValues, result.bindings)
+                    new RDFResult(schema, {} as PropertyValues, selectQuery, result)
                 );
             }
 

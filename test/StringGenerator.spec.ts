@@ -1,7 +1,7 @@
 import { assert } from "chai";
-import { StringGenerator } from "./StringGenerator";
-import { PrefixList, PropertyList, PropertyValues } from "./Model";
-import data from "./PersonTestData";
+import { StringGenerator } from "../src/StringGenerator";
+import { PrefixList, PropertyList, PropertyValues } from "../src/Model";
+import data from "../src/PersonTestData";
 
 
 describe("StringGenerator", function() {

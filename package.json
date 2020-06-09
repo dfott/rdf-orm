@@ -8,7 +8,7 @@
     "dev": "nodemon ./src/index.ts",
     "fuseki": "./jena_fuseki/fuseki-server",
     "build": "tsc -p .",
-    "test": "mocha -r ts-node/register src/**/*.spec.ts"
+    "test": "mocha -r ts-node/register test/**/*.spec.ts"
   },
   "keywords": [],
   "author": "Daniel Fott",
