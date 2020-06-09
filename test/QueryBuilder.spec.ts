@@ -28,7 +28,7 @@ ${StringGenerator.insertString(data.propertyList, data.danielValues, data.resour
         assert.equal(QueryBuilder.buildFind(data.personSchema), expectedSelectString);
     })
 
-    it("should build a select query, that would select all filtered tuples, that modell the specified schema", function() {
+    it.skip("should build a select query, that would select all filtered tuples, that modell the specified schema", function() {
         const expectedSelectString = `${StringGenerator.prefixString(data.prefixList)}\n\n`
             .concat(`select ${StringGenerator.selectString(data.propertyList, data.resourceType)}\n`)
             .concat(`where {\n`)

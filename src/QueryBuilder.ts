@@ -32,7 +32,9 @@ export class QueryBuilder {
 
     public static buildFindFiltered(schema: Schema, findParameters: FindParameters): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
-            .concat(`select ${StringGenerator.selectString(schema.properties, schema.resourceType)}\n`)
+            .concat(`construct {\n`)
+            .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
+            .concat(`}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
             .concat(`${StringGenerator.whereStringFiltered(schema.properties, findParameters, schema.resourceType)}\n`)

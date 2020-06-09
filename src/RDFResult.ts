@@ -9,7 +9,7 @@ export class RDFResult {
 
     private builder: QueryBuilder;
 
-    constructor(private schema: Schema, private values: PropertyValues, public query?: string, public result?: any) {
+    constructor(private schema: Schema, public values: PropertyValues, public query?: string, public result?: any) {
         this.builder = new QueryBuilder(this.schema, this.values);
         if (result) this.values = this.extractPropertiesFromJsonLD(result);
     }

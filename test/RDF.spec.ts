@@ -41,20 +41,25 @@ describe("RDF", function() {
         assert.isArray(persons);
         assert.lengthOf(persons, 0);
     })
-    it.skip("should delete resources and their properties, based on the given filters", async function() {
+    it("should delete resources and their properties, based on the given filters", async function() {
         const testo = Person.create({ identifier: "TestoMesto", firstname: "Testo", lastname: "Mesto", age: 25});
         await testo.save()
+        const lesto = Person.create({ identifier: "LestoMesto", firstname: "Lesto", lastname: "Mesto", age: 25});
+        await lesto.save()
 
         let foundTesto = await Person.find({ firstname: "Testo" });
-        assert.equal(foundTesto.result.length, 1);
+        // console.log(foundTesto)
+        assert.equal(foundTesto.values.firstname, "Testo");
+        let foundLesto = await Person.find({ firstname: "Lesto" });
+        assert.equal(foundLesto.values.firstname, "Lesto");
 
-        await Person.delete({ firstname: "Testo" });
+        await Person.delete({ age: 25 });
 
-        foundTesto = await Person.find({ firstname: "Testo" });
+        foundTesto = await Person.find({ age: 25 });
 
-        assert.equal(foundTesto.result.length, 0);
+        assert.isUndefined(foundTesto.result["@type"]);
     })
-    it("should delete resources and their properties, based on the given identifier", async function() {
+    it.skip("should delete resources and their properties, based on the given identifier", async function() {
         const result = await Person.deleteByIdentifier("DanielFott");
         assert.equal("", "");
     })

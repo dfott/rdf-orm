@@ -26,7 +26,7 @@ export class RDF {
                     QueryBuilder.buildFind(schema);
                 const result = await request.query(selectQuery, { "Accept": "application/ld+json" });
                 return Promise.resolve(
-                    new RDFResult(schema, {} as PropertyValues, result)
+                    new RDFResult(schema, {} as PropertyValues, selectQuery, result)
                 );
             }
 
