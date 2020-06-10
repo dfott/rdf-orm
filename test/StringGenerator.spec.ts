@@ -37,7 +37,9 @@ PREFIX schema: <http://schema.org/>`;
 <${uri}> rdf:lastname "${data.danielValues.lastname}" .
 <${uri}> schema:age ${data.danielValues.age} .`
 
-        assert.equal(StringGenerator.insertString(data.propertyList, data.danielValues, data.resourceSchema, data.resourceType), expectedInsertString);
+        const insertResult = StringGenerator.insertString(data.propertyList, data.danielValues, data.resourceSchema, data.resourceType)
+
+        assert.equal(insertResult, expectedInsertString);
     });
 
     it("should generate a graph pattern, that identifies tupels, based on the given list of properties and values", function() {

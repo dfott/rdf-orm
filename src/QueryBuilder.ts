@@ -16,6 +16,21 @@ export class QueryBuilder {
             .concat(`\n}`)
     }
 
+    public buildUpdate(values: PropertyValues) {
+        const whereGraphPattern = StringGenerator.whereString(this.schema.properties, this.schema.resourceType);
+        return `${StringGenerator.prefixString(this.schema.prefixes)}\n\n`
+            .concat(`delete {\n`)
+            .concat(`${whereGraphPattern}`)
+            .concat(`\n}\n`)
+            .concat(`insert {\n`)
+            .concat(StringGenerator.insertString(this.schema.properties, values, this.schema.resourceSchema, this.schema.resourceType))
+            .concat(`\n}\n`)
+            .concat(`where {\n`) 
+            .concat(whereGraphPattern + "\n")
+            .concat(StringGenerator.identifier(this.schema, values.identifier))
+            .concat(`\n}`)
+    }
+
     /**
      * Builds a find query, which would find every tupel that is modelled by the given schema
      * @param schema - schema that provides the necessary information about the model
@@ -43,10 +58,8 @@ export class QueryBuilder {
 
     public static buildFindByIdentifier(schema: Schema, identifier: string): string {
         const graphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
-        const firstProp = Object.keys(schema.properties)[0];
-        const firstPropPrefix = schema.properties[firstProp].prefix;
         const whereString = `${graphPattern}\n`
-            .concat(`<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`);
+            .concat(StringGenerator.identifier(schema, identifier));
         
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`construct {\n`)

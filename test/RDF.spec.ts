@@ -41,7 +41,7 @@ describe("RDF", function() {
         assert.isArray(persons);
         assert.lengthOf(persons, 0);
     })
-    it("should delete resources and their properties, based on the given filters", async function() {
+    it.skip("should delete resources and their properties, based on the given filters", async function() {
         const testo = Person.create({ identifier: "TestoMesto", firstname: "Testo", lastname: "Mesto", age: 25});
         await testo.save()
         const lesto = Person.create({ identifier: "LestoMesto", firstname: "Lesto", lastname: "Mesto", age: 25});
@@ -71,6 +71,16 @@ describe("RDF", function() {
         console.log(foundDaniel);
         // LdConverter.convert(data.personSchema, foundDaniel.result);
         // console.log(foundDaniel);
+        assert.equal("", "");
+    })
+    it.skip("should update", async function() {
+        const daniel = await Person.findByIdentifier("DanielFott");
+        console.log(daniel);
+
+        daniel.values.firstname = "Dän";
+        daniel.values.age = 35;
+        console.log(await daniel.save());
+
         assert.equal("", "");
     })
     it.skip("should find resources and their properties, based on the given filters", async function() {

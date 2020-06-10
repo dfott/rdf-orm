@@ -1,4 +1,4 @@
-import { PrefixList, PropertyList, PropertyValues, FindParameters } from "./Model";
+import { PrefixList, PropertyList, PropertyValues, FindParameters, Schema } from "./Model";
 
 export class StringGenerator {
 
@@ -68,6 +68,12 @@ export class StringGenerator {
             const value = typeof findParameters[findParam] === "string" ? `"${findParameters[findParam]}"` : findParameters[findParam];
             return `?${resourceType} ${property.prefix}:${findParam} ${value} .`;
         }).join("\n")
+    }
+
+    public static identifier(schema: Schema, identifier: string): string {
+        const firstProp = Object.keys(schema.properties)[0];
+        const firstPropPrefix = schema.properties[firstProp].prefix;
+        return `<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`;
     }
 
 }
