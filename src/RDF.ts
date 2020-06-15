@@ -11,7 +11,6 @@ interface IRDFModel {
     deleteByIdentifier(identifier: string): Promise<boolean>
 }
 
-// const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
 export class RDF {
 
     public static createModel(schema: Schema, request: RDFRequest): IRDFModel {
@@ -20,16 +19,21 @@ export class RDF {
             /**
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them
              * in a list of object.
+             * @param findParameters? - optional object, that can contain properties and their values to filter the result 
              */
             async find(findParameters?: FindParameters): Promise<RDFResult> {
                 const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
                 const result = await request.query(selectQuery, { "Accept": "application/ld+json" });
                 return Promise.resolve(
-                    new RDFResult(schema, {} as PropertyValues, selectQuery, result)
+                    new RDFResult(schema, {} as PropertyValues, "", "")
                 );
             }
 
+            /**
+             * Finds a resource and its properties, based on the given identifier 
+             * @param identifier 
+             */
             async findByIdentifier(identifier: string): Promise<RDFResult> {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 // console.log(selectQuery)
@@ -47,6 +51,11 @@ export class RDF {
                 return new RDFResult(schema, values);
             }
 
+            /**
+             * Deletes every group of tuples in a triplestore, if there is no findParameters object. If there is one, delete every
+             * resource that is filtered by the given findParameters values
+             * @param findParameters? - optional object, that can contain properties and their values to filter the result 
+             */
             async delete(findParameters?: FindParameters): Promise<boolean>{
                 const deleteQuery = findParameters ? QueryBuilder.buildDeleteFiltered(schema, findParameters) : 
                     QueryBuilder.buildDelete(schema);
@@ -54,6 +63,10 @@ export class RDF {
                 return Promise.resolve(true);
             }
 
+            /**
+             * Deletes a resource and its properties, based on the given identifier 
+             * @param identifier 
+             */
             async deleteByIdentifier(identifier: string): Promise<boolean> {
                 const deleteQuery = QueryBuilder.buildDeleteByIdentifier(schema, identifier);
                 await request.update(deleteQuery);

@@ -7,11 +7,11 @@ import { LdConverter } from "../src/LdConverter";
 const Person = RDF.createModel(data.personSchema, data.request);
 
 describe("RDF", function() {
-    // before(async function() {
-    //     await (Person.create(data.danielValues)).save();
-    //     await (Person.create(data.peterValues)).save();
-    //     await (Person.create(data.guterValues)).save();
-    // })
+    before(async function() {
+        await (Person.create(data.danielValues)).save();
+        await (Person.create(data.peterValues)).save();
+        await (Person.create(data.guterValues)).save();
+    })
     // after(async function() {
     //     await Person.delete();
     // })
@@ -26,9 +26,9 @@ describe("RDF", function() {
         assert.equal(foundDaniel.age.value, userValues.age);
         await Person.delete({ firstname: "Create", lastname: "Tupels" });
     })
-    it.skip("should find every group of tuples that represent the created model schema and return them", async function() {
-        const persons = (await Person.find()).result;
-        // console.log(persons)
+    it("should find every group of tuples that represent the created model schema and return them", async function() {
+        const persons = (await Person.find());
+        console.log(persons)
         // assert.isArray(persons);
         // assert.isAtLeast(persons.length, 1);
         assert.equal("", "");
