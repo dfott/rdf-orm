@@ -1,4 +1,4 @@
-import { PropertyValues, Schema, FindParameters } from "./Model";
+import { PropertyValues, Schema, FindParameters } from "./RDF";
 import { StringGenerator } from "./StringGenerator";
 
 export class QueryBuilder {

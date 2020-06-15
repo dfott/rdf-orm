@@ -1,4 +1,4 @@
-import { Schema, PropertyValues, PropertyList } from "./Model";
+import { Schema, PropertyValues, PropertyList } from "./RDF";
 import { QueryBuilder } from "./QueryBuilder";
 import { RDFRequest } from "./RDFRequest";
 import { defaultJsonLd } from "./LdConverter";

@@ -1,7 +1,46 @@
-import { PropertyValues, Schema, FindParameters } from "./Model"
 import { RDFResult } from "./RDFResult"
 import { QueryBuilder } from "./QueryBuilder"
 import { RDFRequest } from "./RDFRequest"
+export interface PrefixList {
+    [prefix: string]: string,
+}
+
+export interface Property {
+    prefix: string;
+    isKey?: boolean;
+}
+
+export interface PropertyList {
+    [propertyName: string]: Property;
+}
+
+export interface PropertyValues {
+    identifier: string;
+    [propertyName: string]: any;
+}
+
+export interface Schema {
+    resourceType: string;
+    resourceSchema: string;
+    prefixes: PrefixList;
+    properties: PropertyList;
+}
+
+export interface FindParameters {
+    [propertyName: string]: string | number;
+}
+
+export interface RawModel {
+    [propertyName: string] : {
+        type: string;
+        value: string;
+    }
+}
+
+export interface ObjectValues {
+    [propertyName: string]: string;
+}
+
 
 interface IRDFModel {
     create(values: PropertyValues): RDFResult

@@ -1,4 +1,4 @@
-import { Schema, PropertyList, PropertyValues, PrefixList } from "./Model";
+import { Schema, PropertyList, PropertyValues, PrefixList } from "./RDF";
 
 export interface defaultJsonLd {
     "@id": string;
