@@ -65,7 +65,7 @@ export class RDF {
                     QueryBuilder.buildFind(schema);
                 const result = await request.query(selectQuery, { "Accept": "application/ld+json" });
                 return Promise.resolve(
-                    new RDFResult(schema, {} as PropertyValues, "", "")
+                    new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
                 );
             }
 
@@ -78,7 +78,7 @@ export class RDF {
                 // console.log(selectQuery)
                 const result = await request.query(selectQuery, { "Accept": "application/ld+json" }); 
                 return Promise.resolve(
-                    new RDFResult(schema, {} as PropertyValues, selectQuery, result)
+                    new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
                 );
             }
 
@@ -87,7 +87,7 @@ export class RDF {
              * @param values - values for every property, specified in the model schema
              */
             create(values: PropertyValues): RDFResult {
-                return new RDFResult(schema, values);
+                return new RDFResult(request, schema, values);
             }
 
             /**

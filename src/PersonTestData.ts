@@ -1,4 +1,4 @@
-import { PrefixList, PropertyList, PropertyValues, Schema, FindParameters } from "./Model";
+import { PrefixList, PropertyList, PropertyValues, Schema, FindParameters } from "./RDF";
 import { RDFRequest } from "./RDFRequest";
 
 const prefixList = {
@@ -43,6 +43,7 @@ const resourceSchema = prefixList.schema;
 const resourceType = "Person";
 
 const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
+// const request = new RDFRequest("http://localhost:9999/bigdata/sparql", "http://localhost:9999/bigdata/sparql");
 
 const personSchema = {
     resourceSchema,

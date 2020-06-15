@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import { StringGenerator } from "../src/StringGenerator";
-import { PrefixList, PropertyList, PropertyValues } from "../src/Model";
+import { PrefixList, PropertyList, PropertyValues } from "../src/RDF";
 import data from "../src/PersonTestData";
 
 
