@@ -36,7 +36,7 @@ const Blog = RDF.createModel(BlogSchema, req);
 const exampleBlog1: PropertyValues = {
     identifier: "blog1",
     title: "Mein erster Blog",
-    comment: "http://schema.org/Comment/comment1",
+    comment: "comment1",
 }
 
 export default {

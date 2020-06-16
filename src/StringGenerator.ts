@@ -62,8 +62,10 @@ export class StringGenerator {
         return Object.keys(values).map((propertyName: string) => {
             if (propertyName !== "identifier") {
                 const schema = properties[propertyName];
-                if (properties[propertyName].type === "uri") {
-                    return `<${uri}> ${schema.prefix}:${propertyName} <${values[propertyName]}>`
+                const property = properties[propertyName];
+                if (property.type === "uri" && property.ref) {
+                    const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${values[propertyName]}` 
+                    return `<${uri}> ${schema.prefix}:${propertyName} <${rdfObject}>`
                 } else {
                     const value = typeof values[propertyName] === "string" ? `"${values[propertyName]}"` : values[propertyName];
                     if (!value) { throw Error(`No value given for property '${propertyName}'.`) }

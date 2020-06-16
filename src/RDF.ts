@@ -9,7 +9,7 @@ export interface Property {
     prefix: string;
     optional?: boolean;
     type?: "uri";
-    ref?: object;
+    ref?: IRDFModel;
     isKey?: boolean;
 }
 
@@ -46,6 +46,7 @@ export interface ObjectValues {
 
 
 export interface IRDFModel {
+    schema?: Schema;
     create(values: PropertyValues): RDFResult
     find(findParameters?: FindParameters): Promise<RDFResult>
     findByIdentifier(identifier: string): Promise<RDFResult>
@@ -65,6 +66,8 @@ export class RDF {
      */
     public static createModel(schema: Schema, request: RDFRequest): IRDFModel {
         return new class Model implements IRDFModel {
+
+            public schema: Schema = schema;
 
             /**
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them.
