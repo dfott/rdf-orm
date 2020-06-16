@@ -3,7 +3,6 @@ import { RDF, Schema } from "./RDF";
 
 import data from "./PersonTestData"
 
-const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 const Person = RDF.createModel(data.personSchemaAdvanced, req);
 
 const prefixList = {
@@ -13,20 +12,5 @@ const prefixList = {
     "schema": "http://schema.org/",
 };
 
-const resourceSchema = prefixList.schema;
-const resourceType = "Person";
 
-const propertyListAdvanced = {
-    firstname: { prefix: "rdf" },
-    lastname: { prefix: "rdf" },
-    knows: { prefix: "rdf", optional: true, type: this },
-};
-
-const personSchemaAdvanced: Schema = {
-    resourceSchema,
-    resourceType,
-    prefixes: prefixList,
-    properties: propertyListAdvanced
-}
-
-console.log(personSchemaAdvanced.properties.knows)
+// console.log(personSchemaAdvanced.properties.knows)

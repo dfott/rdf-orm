@@ -8,7 +8,8 @@ export interface PrefixList {
 export interface Property {
     prefix: string;
     optional?: boolean;
-    type?: object;
+    type?: "uri";
+    ref?: object;
     isKey?: boolean;
 }
 
@@ -44,7 +45,7 @@ export interface ObjectValues {
 }
 
 
-interface IRDFModel {
+export interface IRDFModel {
     create(values: PropertyValues): RDFResult
     find(findParameters?: FindParameters): Promise<RDFResult>
     findByIdentifier(identifier: string): Promise<RDFResult>
