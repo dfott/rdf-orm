@@ -2,6 +2,7 @@ import { assert } from "chai";
 import { StringGenerator } from "../src/StringGenerator";
 import { PrefixList, PropertyList, PropertyValues } from "../src/RDF";
 import data from "../src/PersonTestData";
+import blogData from "../src/BlogTestData";
 
 
 describe("StringGenerator", function() {
@@ -57,6 +58,20 @@ PREFIX schema: <http://schema.org/>`;
 
         assert.equal(insertResult, expectedInsertString);
     });
+
+    it("should generate an insert string, which correctly inserts an uri", function() {
+        const blog = blogData.BlogSchema;
+        const blogValues = blogData.exampleBlog1;
+        const uri = `${blog.resourceSchema}${blog.resourceType}/${blogValues.identifier}`;
+
+        const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
+            .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
+            .concat(`<${uri}> schema:comment <${blogValues.comment}> .`);
+
+        assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
+            expectedInsertString);
+
+    })
 
     it("should generate a graph pattern, that identifies tupels, based on the given list of properties and values", function() {
         const expectedGraphPattern = `?Person schema:age 20 .`;

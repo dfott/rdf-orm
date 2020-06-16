@@ -1,4 +1,4 @@
-import { Schema, RDF } from "./RDF";
+import { Schema, RDF, PropertyValues } from "./RDF";
 import { RDFRequest } from "./RDFRequest";
 
 const prefixes = {
@@ -33,10 +33,17 @@ const BlogSchema: Schema = {
 
 const Blog = RDF.createModel(BlogSchema, req);
 
+const exampleBlog1: PropertyValues = {
+    identifier: "blog1",
+    title: "Mein erster Blog",
+    comment: "http://schema.org/Comment/comment1",
+}
+
 export default {
     req,
     CommentSchema,
     BlogSchema,
     Blog,
-    Comment
+    Comment,
+    exampleBlog1,
 }

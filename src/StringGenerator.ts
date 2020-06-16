@@ -61,11 +61,15 @@ export class StringGenerator {
         if (!values.identifier) { throw Error("Identifier for this resource is missing in the PropertyValues.") }
         return Object.keys(values).map((propertyName: string) => {
             if (propertyName !== "identifier") {
-                const value = typeof values[propertyName] === "string" ? `"${values[propertyName]}"` : values[propertyName];
-                if (!value) { throw Error(`No value given for property '${propertyName}'.`) }
                 const schema = properties[propertyName];
-                if (!schema) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
-                return `<${uri}> ${schema.prefix}:${propertyName} ${value}`;
+                if (properties[propertyName].type === "uri") {
+                    return `<${uri}> ${schema.prefix}:${propertyName} <${values[propertyName]}>`
+                } else {
+                    const value = typeof values[propertyName] === "string" ? `"${values[propertyName]}"` : values[propertyName];
+                    if (!value) { throw Error(`No value given for property '${propertyName}'.`) }
+                    if (!schema) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
+                    return `<${uri}> ${schema.prefix}:${propertyName} ${value}`;
+                }
             } else {
                 // the identifier is not inserted into the triplestore as a property. instead of inserting it, we will insert
                 // a tuple which defined the type of the resource
