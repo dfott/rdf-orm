@@ -7,6 +7,8 @@ export interface PrefixList {
 
 export interface Property {
     prefix: string;
+    optional?: boolean;
+    type?: object;
     isKey?: boolean;
 }
 
@@ -50,14 +52,21 @@ interface IRDFModel {
     deleteByIdentifier(identifier: string): Promise<boolean>
 }
 
+/**
+ * This is the main class, used to create a model. The model can then be used to perform all CRUD operations available.
+ */
 export class RDF {
 
+    /**
+     * Creates a model that can be used to perform all CRUD operations.
+     * @param schema - schema that provides the necessary information about the model
+     * @param request - request object, that will send http requests to a specified triplestore
+     */
     public static createModel(schema: Schema, request: RDFRequest): IRDFModel {
         return new class Model implements IRDFModel {
 
             /**
-             * Finds every group of tuples in a triplestore, that represent the created model schema and returns them
-             * in a list of object.
+             * Finds every group of tuples in a triplestore, that represent the created model schema and returns them.
              * @param findParameters? - optional object, that can contain properties and their values to filter the result 
              */
             async find(findParameters?: FindParameters): Promise<RDFResult> {

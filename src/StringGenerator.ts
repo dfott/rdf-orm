@@ -24,14 +24,27 @@ export class StringGenerator {
     }
 
     /**
-     * Generates a string, that contains a basic graph pattern and will be in the where clause of a SparQL query. 
+     * Generates a string, that contains a basic graph pattern and will be in the construct clause of a SparQL query. 
+     * @param properties - List of every property and its prefix
+     * @param resourceType - Type of the modelled resource
+     */
+    public static constructString(properties: PropertyList, resourceType: string): string {
+        return Object.keys(properties).map((propertyName: string) => {
+            const prefix = properties[propertyName].prefix
+            return `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
+        }).join(" .\n").concat(` .\n?${resourceType} a ?type .`);
+    }
+
+    /**
+     * Generates a string, that contains a basic graph pattern including optional tupels and will be in the where clause of a SparQL query. 
      * @param properties - List of every property and its prefix
      * @param resourceType - Type of the modelled resource
      */
     public static whereString(properties: PropertyList, resourceType: string): string {
         return Object.keys(properties).map((propertyName: string) => {
             const prefix = properties[propertyName].prefix
-            return `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
+            const tupel = `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
+            return properties[propertyName].optional ? `OPTIONAL { ${tupel} }` : tupel;
         }).join(" .\n").concat(` .\n?${resourceType} a ?type .`);
     }
 
@@ -61,6 +74,12 @@ export class StringGenerator {
         }).join(" .\n").concat(" .");
     }
 
+    /**
+     * Generates a string with a graph pattern, that filters the result based on the given values in the findParameters object. 
+     * @param properties - List of every proeprty and its prefix
+     * @param findParameters? - object, that contains properties and their values to filter the result 
+     * @param resourceType - Type of the modelled resource
+     */
     public static whereStringFiltered(properties: PropertyList, findParameters: FindParameters, resourceType: string) {
         return Object.keys(findParameters).map((findParam: string) => {
             const property = properties[findParam];
@@ -70,6 +89,11 @@ export class StringGenerator {
         }).join("\n")
     }
 
+    /**
+     * Generates a string that can be added to a graph pattern to filter the result based on the given identifier.
+     * @param schema - schema that provides the necessary information about the model
+     * @param identifier 
+     */
     public static identifier(schema: Schema, identifier: string): string {
         const firstProp = Object.keys(schema.properties)[0];
         const firstPropPrefix = schema.properties[firstProp].prefix;

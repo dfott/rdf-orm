@@ -42,7 +42,7 @@ export class QueryBuilder {
     public static buildFind(schema: Schema): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`construct {\n`)
-            .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
+            .concat(`${StringGenerator.constructString(schema.properties, schema.resourceType)}\n`)
             .concat(`}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
@@ -57,7 +57,7 @@ export class QueryBuilder {
     public static buildFindFiltered(schema: Schema, findParameters: FindParameters): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`construct {\n`)
-            .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
+            .concat(`${StringGenerator.constructString(schema.properties, schema.resourceType)}\n`)
             .concat(`}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
@@ -77,7 +77,7 @@ export class QueryBuilder {
         
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`construct {\n`)
-            .concat(`${StringGenerator.whereString(schema.properties, schema.resourceType)}\n`)
+            .concat(`${StringGenerator.constructString(schema.properties, schema.resourceType)}\n`)
             .concat(`}\n`)
             .concat(`where {\n`)
             .concat(`${whereString}\n`)

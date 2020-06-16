@@ -29,6 +29,22 @@ PREFIX schema: <http://schema.org/>`;
         assert.equal(StringGenerator.whereString(data.propertyList, data.resourceType), expectedWhereString);
     })
 
+    it("should generate a basic graph pattern where string with an optional tupel", function() {
+        const expectedWhereString = `?${data.personSchemaAdvanced.resourceType} rdf:firstname ?firstname .\n`
+            .concat(`?${data.personSchemaAdvanced.resourceType} rdf:lastname ?lastname .\n`)
+            .concat(`OPTIONAL { ?${data.personSchemaAdvanced.resourceType} rdf:knows ?knows } .\n`)
+            .concat(`?${data.personSchemaAdvanced.resourceType} a ?type .`)
+        assert.equal(StringGenerator.whereString(data.personSchemaAdvanced.properties, data.personSchemaAdvanced.resourceType), expectedWhereString);
+    })
+
+    it("should generate a basic graph pattern, that will construct all tupels based on the given properties", function() {
+        const expectedConstructString = `?${data.personSchemaAdvanced.resourceType} rdf:firstname ?firstname .\n`
+            .concat(`?${data.personSchemaAdvanced.resourceType} rdf:lastname ?lastname .\n`)
+            .concat(`?${data.personSchemaAdvanced.resourceType} rdf:knows ?knows .\n`)
+            .concat(`?${data.personSchemaAdvanced.resourceType} a ?type .`)
+        assert.equal(StringGenerator.constructString(data.personSchemaAdvanced.properties, data.personSchemaAdvanced.resourceType), expectedConstructString);
+    })
+
     it("should generate an insert string with RDF triples, that will be inserted into a triplestore", function() {
         const uri = `${data.resourceSchema}${data.resourceType}/${data.danielValues.identifier}`;
         const expectedInsertString = 

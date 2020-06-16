@@ -45,12 +45,25 @@ const resourceType = "Person";
 const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
 // const request = new RDFRequest("http://localhost:9999/bigdata/sparql", "http://localhost:9999/bigdata/sparql");
 
-const personSchema = {
+const personSchema: Schema = {
     resourceSchema,
     resourceType,
     prefixes: prefixList,
     properties: propertyList
-} as Schema;
+};
+
+const propertyListAdvanced: PropertyList = {
+    firstname: { prefix: "rdf" },
+    lastname: { prefix: "rdf" },
+    knows: { prefix: "rdf", optional: true },
+};
+
+const personSchemaAdvanced: Schema = {
+    resourceSchema,
+    resourceType,
+    prefixes: prefixList,
+    properties: propertyListAdvanced
+}
 
 export default {
     prefixList,
@@ -59,6 +72,7 @@ export default {
     findParameterList,
     resourceType,
     personSchema,
+    personSchemaAdvanced,
     request,
     danielValues,
     peterValues,
