@@ -36,9 +36,17 @@ const BlogSchema: Schema = {
 
 const Blog = RDF.createModel(BlogSchema, req);
 
-Blog.find().then(res => {
-    console.log(res.query)
-})
+const blog1 = Blog.create({
+    identifier: "Blog1", title: "Mein zweiter Blog", comment: ["comment1", "comment2"]
+});
+
+blog1.save().then(_ => {
+    Blog.find().then(res => {
+        console.log(res.query)
+        console.log(res)
+    })
+});
+
 
 
 // console.log(personSchemaAdvanced.properties.knows)

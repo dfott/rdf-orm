@@ -59,25 +59,38 @@ export class StringGenerator {
     public static insertString(properties: PropertyList, values: PropertyValues, resourceSchema: string, resourceType: string) : string {
         const uri = `${resourceSchema}${resourceType}/${values.identifier}`;
         if (!values.identifier) { throw Error("Identifier for this resource is missing in the PropertyValues.") }
-        return Object.keys(values).map((propertyName: string) => {
+        const statementList: string[] = [];
+        Object.keys(values).forEach((propertyName: string) => {
             if (propertyName !== "identifier") {
                 const property = this.getProperty(properties[propertyName]);
                 // const propertyPrefix = property.prefix;
-                if (property.type === "uri" && property.ref) {
-                    const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${values[propertyName]}` 
-                    return `<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`
+                if(!Array.isArray(properties[propertyName])) {
+                    this.pushValueToStatements(statementList, uri, property, propertyName, values[propertyName]);
                 } else {
-                    const value = typeof values[propertyName] === "string" ? `"${values[propertyName]}"` : values[propertyName];
-                    if (!value) { throw Error(`No value given for property '${propertyName}'.`) }
-                    if (!property) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
-                    return `<${uri}> ${property.prefix}:${propertyName} ${value}`;
+                    if (!Array.isArray(values[propertyName])) { throw Error(`Property ${propertyName} was specified to be an array.`) }
+                    (values[propertyName] as any[]).forEach(value => {
+                        this.pushValueToStatements(statementList, uri, property, propertyName, value);
+                    })
                 }
             } else {
                 // the identifier is not inserted into the triplestore as a property. instead of inserting it, we will insert
                 // a tuple which defined the type of the resource
-                return `<${uri}> a <${resourceSchema}${resourceType}>`;
+                statementList.push(`<${uri}> a <${resourceSchema}${resourceType}>`);
             }
-        }).join(" .\n").concat(" .");
+        });
+        return statementList.join(" .\n").concat(" .");
+    }
+
+    private static pushValueToStatements(statementList: string[], uri: string, property: Property, propertyName: string, value: any) {
+        if (property.type === "uri" && property.ref) {
+            const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
+            statementList.push(`<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`);
+        } else {
+            value = typeof value === "string" ? `"${value}"` : value;
+            if (!value) { throw Error(`No value given for property '${propertyName}'.`) }
+            if (!property) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
+            statementList.push(`<${uri}> ${property.prefix}:${propertyName} ${value}`);
+        }
     }
 
     /**
@@ -106,6 +119,11 @@ export class StringGenerator {
         return `<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`;
     }
 
+    /**
+     * Takes a Property Object of a PropertyList and returns only a single Property if it is an array. This methods is used, because the array
+     * will always only contain one Property and is only there to make the Property of type array.
+     * @param property
+     */
     public static getProperty(property: Property | Property[]): Property {
         const prop = (property as Property) || (property as Property[])
         return Array.isArray(prop) ? prop[0] : prop

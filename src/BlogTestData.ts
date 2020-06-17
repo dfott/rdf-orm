@@ -1,4 +1,4 @@
-import { Schema, RDF, PropertyValues } from "./RDF";
+import { Schema, RDF, PropertyValues, Property } from "./RDF";
 import { RDFRequest } from "./RDFRequest";
 
 const prefixes = {
@@ -27,8 +27,12 @@ const BlogSchema: Schema = {
     resourceType: "Blog",
     properties: {
         title: { prefix: "schema" },
-        comment: { prefix: "schema", optional: true, type: "uri", ref: Comment}
+        comment: [{ prefix: "schema", optional: true, type: "uri", ref: Comment}]
     }
+}
+
+const CommentArrayProperty: Property = {
+    prefix: "schema", optional: true, type: "uri", ref: Comment
 }
 
 const Blog = RDF.createModel(BlogSchema, req);
@@ -36,7 +40,13 @@ const Blog = RDF.createModel(BlogSchema, req);
 const exampleBlog1: PropertyValues = {
     identifier: "blog1",
     title: "Mein erster Blog",
-    comment: "comment1",
+    comment: ["comment1"],
+}
+
+const exampleBlog2: PropertyValues = {
+    identifier: "blog1",
+    title: "Mein erster Blog",
+    comment: ["comment1", "comment2"],
 }
 
 export default {
@@ -44,6 +54,8 @@ export default {
     CommentSchema,
     BlogSchema,
     Blog,
+    CommentArrayProperty,
     Comment,
     exampleBlog1,
+    exampleBlog2
 }

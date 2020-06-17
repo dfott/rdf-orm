@@ -1,6 +1,6 @@
 import { assert } from "chai";
 import { StringGenerator } from "../src/StringGenerator";
-import { PrefixList, PropertyList, PropertyValues } from "../src/RDF";
+import { PrefixList, PropertyList, PropertyValues, Property } from "../src/RDF";
 import data from "../src/PersonTestData";
 import blogData from "../src/BlogTestData";
 
@@ -67,11 +67,26 @@ PREFIX schema: <http://schema.org/>`;
 
         const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
             .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
-            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment}> .`);
+            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment[0]}> .`);
 
         assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
             expectedInsertString);
 
+    })
+
+    it("should generate an insert string, which adds a new statement for every value in an array", function() {
+        const blog = blogData.BlogSchema;
+        // blog.properties.comment = { prefix: "schema", optional: true, type: "uri", ref: Comment} as Property;
+        const comment = blogData.CommentSchema;
+        const blogValues = blogData.exampleBlog2;
+        const uri = `${blog.resourceSchema}${blog.resourceType}/${blogValues.identifier}`;
+        const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
+            .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
+            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment[0]}> .\n`)
+            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment[1]}> .`);
+
+        assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
+            expectedInsertString);
     })
 
     it("should generate a graph pattern, that identifies tupels, based on the given list of properties and values", function() {
