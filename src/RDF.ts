@@ -14,7 +14,7 @@ export interface Property {
 }
 
 export interface PropertyList {
-    [propertyName: string]: Property;
+    [propertyName: string]: Property | [Property];
 }
 
 export interface PropertyValues {

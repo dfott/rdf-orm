@@ -122,7 +122,7 @@ export class QueryBuilder {
     public static buildDeleteByIdentifier(schema: Schema, identifier: string): string {
         const whereGraphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
         const firstProp = Object.keys(schema.properties)[0];
-        const firstPropPrefix = schema.properties[firstProp].prefix;
+        const firstPropPrefix = StringGenerator.getProperty(schema.properties[firstProp]).prefix;
         const whereString = `${whereGraphPattern}\n`
             .concat(`<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`);
 

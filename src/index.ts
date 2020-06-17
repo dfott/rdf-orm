@@ -30,11 +30,15 @@ const BlogSchema: Schema = {
     resourceType: "Blog",
     properties: {
         title: { prefix: "schema" },
-        comment: { prefix: "schema", optional: true, type: "uri", ref: Comment}
+        comment: [{ prefix: "schema", optional: true, type: "uri", ref: Comment}]
     }
 }
 
 const Blog = RDF.createModel(BlogSchema, req);
+
+Blog.find().then(res => {
+    console.log(res.query)
+})
 
 
 // console.log(personSchemaAdvanced.properties.knows)

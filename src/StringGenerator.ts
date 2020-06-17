@@ -1,4 +1,4 @@
-import { PrefixList, PropertyList, PropertyValues, FindParameters, Schema } from "./RDF";
+import { PrefixList, PropertyList, PropertyValues, FindParameters, Schema, Property } from "./RDF";
 
 export class StringGenerator {
 
@@ -30,7 +30,7 @@ export class StringGenerator {
      */
     public static constructString(properties: PropertyList, resourceType: string): string {
         return Object.keys(properties).map((propertyName: string) => {
-            const prefix = properties[propertyName].prefix
+            const prefix = (properties[propertyName] as Property).prefix || (properties[propertyName] as Property[])[0].prefix
             return `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
         }).join(" .\n").concat(` .\n?${resourceType} a ?type .`);
     }
@@ -42,9 +42,9 @@ export class StringGenerator {
      */
     public static whereString(properties: PropertyList, resourceType: string): string {
         return Object.keys(properties).map((propertyName: string) => {
-            const prefix = properties[propertyName].prefix
+            const prefix = this.getProperty(properties[propertyName]).prefix
             const tupel = `?${resourceType} ${prefix}:${propertyName} ?${propertyName}`;
-            return properties[propertyName].optional ? `OPTIONAL { ${tupel} }` : tupel;
+            return this.getProperty(properties[propertyName]).optional ? `OPTIONAL { ${tupel} }` : tupel;
         }).join(" .\n").concat(` .\n?${resourceType} a ?type .`);
     }
 
@@ -61,16 +61,16 @@ export class StringGenerator {
         if (!values.identifier) { throw Error("Identifier for this resource is missing in the PropertyValues.") }
         return Object.keys(values).map((propertyName: string) => {
             if (propertyName !== "identifier") {
-                const schema = properties[propertyName];
-                const property = properties[propertyName];
+                const property = this.getProperty(properties[propertyName]);
+                // const propertyPrefix = property.prefix;
                 if (property.type === "uri" && property.ref) {
                     const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${values[propertyName]}` 
-                    return `<${uri}> ${schema.prefix}:${propertyName} <${rdfObject}>`
+                    return `<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`
                 } else {
                     const value = typeof values[propertyName] === "string" ? `"${values[propertyName]}"` : values[propertyName];
                     if (!value) { throw Error(`No value given for property '${propertyName}'.`) }
-                    if (!schema) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
-                    return `<${uri}> ${schema.prefix}:${propertyName} ${value}`;
+                    if (!property) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
+                    return `<${uri}> ${property.prefix}:${propertyName} ${value}`;
                 }
             } else {
                 // the identifier is not inserted into the triplestore as a property. instead of inserting it, we will insert
@@ -88,7 +88,7 @@ export class StringGenerator {
      */
     public static whereStringFiltered(properties: PropertyList, findParameters: FindParameters, resourceType: string) {
         return Object.keys(findParameters).map((findParam: string) => {
-            const property = properties[findParam];
+            const property = this.getProperty(properties[findParam]);
             if (!property) throw Error(`Cannot filter by property ${findParam} as it is not a property of type ${resourceType}.`)
             const value = typeof findParameters[findParam] === "string" ? `"${findParameters[findParam]}"` : findParameters[findParam];
             return `?${resourceType} ${property.prefix}:${findParam} ${value} .`;
@@ -102,8 +102,13 @@ export class StringGenerator {
      */
     public static identifier(schema: Schema, identifier: string): string {
         const firstProp = Object.keys(schema.properties)[0];
-        const firstPropPrefix = schema.properties[firstProp].prefix;
+        const firstPropPrefix = this.getProperty(schema.properties[firstProp]).prefix;
         return `<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`;
+    }
+
+    public static getProperty(property: Property | Property[]): Property {
+        const prop = (property as Property) || (property as Property[])
+        return Array.isArray(prop) ? prop[0] : prop
     }
 
 }
