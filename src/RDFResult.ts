@@ -2,6 +2,7 @@ import { Schema, PropertyValues, PropertyList } from "./RDF";
 import { QueryBuilder } from "./QueryBuilder";
 import { RDFRequest } from "./RDFRequest";
 import { defaultJsonLd } from "./LdConverter";
+import { StringGenerator } from "./StringGenerator";
 
 export interface JsonLD {
     "@graph"?: any[]
@@ -48,6 +49,7 @@ export class RDFResult {
         if (result) { 
             this.values = this.extractPropertiesFromJsonLD(result);
             this.result = this.removeCompactUri(this.result)
+            this.expandPropertyValues(this.result);
             this.updated = true;
         } 
     }
@@ -94,6 +96,32 @@ export class RDFResult {
             this.addKey(ld, jsonld)
             return ld
         }
+    }
+
+    /**
+     * Expands the URI of every property, that has an URI as a value. Used to remove Compact URIs
+     * @param result - JSON-LD object, that is the result of a SparQL Query
+     */
+    private expandPropertyValues(result: any) {
+        Object.keys(this.schema.properties).forEach((propertyName: string) => {
+            const propValue = result[propertyName];
+            if (propValue) {
+                const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
+                if (propDefinition.type === "uri") {
+                    if (Array.isArray(this.schema.properties[propertyName])) {
+                        const values: string[] = [];
+                        const propPrefix = propDefinition.prefix;
+                        propValue.forEach((val: string) => {
+                            values.push(val.replace(`${propPrefix}:`, this.schema.prefixes[propPrefix]));
+                        })
+                        result[propertyName] = values;
+                    } else {
+                        const propPrefix = propDefinition.prefix;
+                        result[propertyName] = propValue.replace(`${propPrefix}:`, this.schema.prefixes[propPrefix]);
+                    }
+                }
+            }
+        });
     }
 
     /**
