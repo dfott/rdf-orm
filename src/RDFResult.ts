@@ -78,6 +78,38 @@ export class RDFResult {
     }
 
     /**
+     * Replaces the uri of the specified property with the object is inside the triplestore
+     * @param propertyName 
+     */
+    public async populate(propertyName: string) {
+        const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
+        if (!propDefinition) { throw Error(`Cannot populate property ${propertyName} as it does'nt exist on the defined type ${this.schema.resourceType}.`) }
+        if (propDefinition.type !== "uri") { throw Error(`Cannot populate property ${propertyName} as values of this property are defined to be literals.`) } 
+        const value = this.result[propertyName];
+        if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
+        if (Array.isArray(value)) {
+            const requests: Promise<RDFResult>[] = [];
+            value.forEach((val: string) => {
+                if (propDefinition.ref) {
+                    let identifierSplit = val.split("/");
+                    let identifier = identifierSplit[identifierSplit.length - 1];
+                    requests.push(propDefinition.ref.findByIdentifier(identifier));
+                }
+            })
+            const populatedResult = await Promise.all(requests);
+
+            this.result[propertyName] = populatedResult.map(populatedResult => populatedResult.result);
+
+            return this;
+            // console.log(this)
+            // console.log(this.result)
+            // return this
+        } else {
+
+        }
+    }
+
+    /**
      * Removes all compact uris used for properties and replaces them with the normal property name. Exmaple: schema:age to age
      * @param jsonld - JSON-LD object, that is the result of a SparQL Query
      */

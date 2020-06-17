@@ -2,6 +2,7 @@ import { RDFRequest } from "./RDFRequest";
 import { RDF, Schema } from "./RDF";
 
 import data from "./PersonTestData"
+import { RDFResult } from "./RDFResult";
 
 const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 const Person = RDF.createModel(data.personSchemaAdvanced, req);
@@ -43,10 +44,23 @@ const blog1 = Blog.create({
 // blog1.save().then(_ => {
 // });
 
-Blog.find().then(res => {
-    console.log(res.query)
-    console.log(res)
+Blog.find().then((res: RDFResult) => {
+    // console.log(res.query)
+    // console.log(res)
+    res.populate("comment").then(res => {
+        console.log(res?.result);
+    }) 
 })
+
+// const c1 = Comment.create({
+//     identifier: "comment1", content:"Im the first comment"
+// });
+// c1.save();
+
+// const c2 = Comment.create({
+//     identifier: "comment2", content: "Im the second comment ever!"
+// })
+// c2.save()
 
 
 // console.log(personSchemaAdvanced.properties.knows)
