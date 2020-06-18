@@ -89,10 +89,11 @@ export class QueryBuilder {
      * @param schema - schema that provides the necessary information about the model
      */
     public static buildDelete(schema: Schema): string {
+        const constructPattern = StringGenerator.constructString(schema.properties, schema.resourceType);
         const whereGraphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`delete {\n`)
-            .concat(whereGraphPattern)
+            .concat(constructPattern)
             .concat(`\n} where {\n`)
             .concat(whereGraphPattern)
             .concat(`\n}`);

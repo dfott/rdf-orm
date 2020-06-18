@@ -44,9 +44,19 @@ const exampleBlog1: PropertyValues = {
 }
 
 const exampleBlog2: PropertyValues = {
-    identifier: "blog1",
-    title: "Mein erster Blog",
+    identifier: "blog2",
+    title: "Mein zweiter Blog",
     comment: ["comment1", "comment2"],
+}
+
+const exampleComment1: PropertyValues = {
+    identifier: "comment1",
+    content: "Der erste Kommentar",
+}
+
+const exampleComment2: PropertyValues = {
+    identifier: "comment2",
+    content: "Der zweitee Kommentar",
 }
 
 export default {
@@ -57,5 +67,7 @@ export default {
     CommentArrayProperty,
     Comment,
     exampleBlog1,
-    exampleBlog2
+    exampleBlog2,
+    exampleComment1,
+    exampleComment2,
 }

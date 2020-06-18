@@ -4,7 +4,7 @@ import { RDF, Schema } from "./RDF";
 import data from "./PersonTestData"
 import { RDFResult } from "./RDFResult";
 
-const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
+const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
 const Person = RDF.createModel(data.personSchemaAdvanced, req);
 
 const prefixList = {
@@ -46,10 +46,11 @@ const blog1 = Blog.create({
 
 Blog.find().then((res: RDFResult) => {
     // console.log(res.query)
-    // console.log(res)
-    res.populate("comment").then(res => {
-        console.log(res?.result);
-    }) 
+    console.log(res.result)
+
+    // res.populate("comment").then(res => {
+    //     console.log(res?.result);
+    // }) 
 })
 
 // const c1 = Comment.create({
