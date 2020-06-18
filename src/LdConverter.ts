@@ -1,4 +1,6 @@
 import { Schema, PropertyList, PropertyValues, PrefixList } from "./RDF";
+import { JsonLD, JsonLDResource } from "./RDFResult";
+import { StringGenerator } from "./StringGenerator";
 
 export interface defaultJsonLd {
     "@id": string;
@@ -14,43 +16,108 @@ interface defaultContext {
 
 export class LdConverter {
 
-    public static convert(schema: Schema, defaultJson: defaultJsonLd) {
-        // console.log("context")
-        // console.log(this.buildContext(defaultJson["@context"], schema.properties, schema.prefixes));
-        // console.log("values")
-        // console.log(this.buildPropertyValues(schema.properties, defaultJson));
-
-        let final = {
-            "@context": this.buildContext(defaultJson["@context"], schema.properties, schema.prefixes),
-            "@type": defaultJson["@type"],
-            "@id": defaultJson["@id"],
-            ...this.buildPropertyValues(schema.properties, defaultJson),
-        };
-        console.log(final)
+    private static applyFunctionToResult(jsonld: JsonLD, callback: (result: JsonLD) => void) {
+        if (jsonld["@graph"]) {
+            jsonld["@graph"].forEach((res: JsonLD) => {
+                callback(res);
+            }) 
+        } else {
+            callback(jsonld);
+        }
     }
 
-    private static buildContext(context: defaultContext, properties: PropertyList, prefixes: PrefixList): defaultContext {
-        const newContext = {} as defaultContext;
-        Object.keys(properties).forEach((prop: string) => {
-            newContext[prop] = `${prefixes[properties[prop].prefix]}${prop}`;
-        })
-        return newContext;
+    /**
+     * Removes all compact uris used for properties and replaces them with the normal property name. Example: schema:age to age
+     * @param jsonld - JSON-LD object, that is the result of a SparQL Query
+     */
+    public static removeCompactUri(jsonld: JsonLD): JsonLD {
+        if (jsonld["@graph"]) {
+            const graph: any[] = [];
+            jsonld["@graph"].forEach((ldResource: JsonLDResource) => {
+                const ld = {};
+                this.readdProperties(ld, ldResource);
+                graph.push(ld);
+            })
+            jsonld["@graph"] = graph
+            return jsonld
+        } else {
+            const ld: JsonLD = { "@context": jsonld["@context"] };
+            this.readdProperties(ld, jsonld)
+            return ld
+        }
     }
 
-    private static buildPropertyValues(properties: PropertyList, defaultJson: defaultJsonLd) {
-        const propertyValues = {} as PropertyValues;
-        Object.keys(defaultJson).forEach((key: string) => {
-            if (this.propertyExists(key, properties)) {
-                propertyValues[key] = defaultJson[key];
-            } else if (this.propertyExists(key.split(":")[1], properties)) {
-                propertyValues[key.split(":")[1]] = defaultJson[key];
+    /**
+     * 
+     * @param newLD - new object, that will contain property names without their uri
+     * @param oldLD - old object, that still contains compact uris
+     */
+    private static readdProperties(newLD: JsonLD, oldLD: JsonLD) {
+        Object.keys(oldLD).forEach((key: string) => {
+            const splitKey = key.split(":");
+            if (splitKey.length === 2) {
+                newLD[splitKey[1]] = oldLD[key]
+            } else {
+                newLD[key] = oldLD[key]
             }
         })
-        return propertyValues;
     }
 
-    private static propertyExists(key: string, properties: PropertyList): boolean {
-        return Object.keys(properties).indexOf(key) !== -1;
+    /**
+     * If available, expands the id and replaces it with a full uri. Example: schema:Person/Daniel to http://schema.org/Person/Daniel
+     * @param id 
+     */
+    public static expandID(jsonld: JsonLD, prefixes: PrefixList) {
+        this.applyFunctionToResult(jsonld, (res: JsonLD) => {
+            const id = res["@id"];
+            if (id) {
+                const splitId = id.split(":");
+                if (splitId.length === 2) {
+                    const schema = prefixes[splitId[0]];
+                    if (schema) {
+                        // return id.replace(`${splitId[0]}:`, schema);
+                        res["@id"] = id.replace(`${splitId[0]}:`, schema);
+                    }
+                    // return id;
+                }
+            }
+        })
+    }
+
+    /**
+     * Expands the URI of every property, that has an URI as a value. Used to remove Compact URIs
+     * TODO: CLEANUP THIS FUNCTION
+     * @param result - JSON-LD object, that is the result of a SparQL Query
+     */
+    public static expandPropertyValues(result: any, schema: Schema) {
+        this.applyFunctionToResult(result, (obj) => {
+            Object.keys(schema.properties).forEach((propertyName: string) => {
+                const propValue = obj[propertyName];
+                if (propValue) {
+                    const propDefinition = StringGenerator.getProperty(schema.properties[propertyName]);
+                    if (propDefinition.type === "uri" && propDefinition.ref) {
+                        const referencedSchema = propDefinition.ref.schema;
+                        if (referencedSchema) {
+                            const propPrefix = Object.keys(referencedSchema?.prefixes).find(prefName => referencedSchema.prefixes[prefName] === referencedSchema.resourceSchema);
+                            if (propPrefix) {
+                                if (Array.isArray(schema.properties[propertyName])) {
+                                    const values: string[] = [];
+                                        propValue.forEach((val: string) => {
+                                            console.log(`replace in ${val}`)
+                                            console.log(`replace  ${propPrefix}:`)
+                                            console.log(`with  ${schema.prefixes[propPrefix]}:`)
+                                            values.push(val.replace(`${propPrefix}:`, schema.prefixes[propPrefix]));
+                                        })
+                                        obj[propertyName] = values;
+                                } else {
+                                    obj[propertyName] = propValue.replace(`${propPrefix}:`, schema.prefixes[propPrefix]);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })
     }
 
 }

@@ -1,7 +1,7 @@
 import { Schema, PropertyValues, PropertyList } from "./RDF";
 import { QueryBuilder } from "./QueryBuilder";
 import { RDFRequest } from "./RDFRequest";
-import { defaultJsonLd } from "./LdConverter";
+import { defaultJsonLd, LdConverter } from "./LdConverter";
 import { StringGenerator } from "./StringGenerator";
 
 export interface JsonLD {
@@ -48,9 +48,10 @@ export class RDFResult {
         this.builder = new QueryBuilder(this.schema, this.values);
         if (result) { 
             this.values = this.extractPropertiesFromJsonLD(result);
-            this.result = this.removeCompactUri(this.result)
+            this.result = LdConverter.removeCompactUri(this.result)
+            LdConverter.expandID(this.result, this.schema.prefixes);
             this.valueToArray();
-            this.expandPropertyValues(this.result);
+            LdConverter.expandPropertyValues(this.result, this.schema);
             this.updated = true;
         } 
     }
@@ -126,96 +127,13 @@ export class RDFResult {
 
             return this;
         } else {
-
-        }
-    }
-
-    /**
-     * Removes all compact uris used for properties and replaces them with the normal property name. Exmaple: schema:age to age
-     * @param jsonld - JSON-LD object, that is the result of a SparQL Query
-     */
-    private removeCompactUri(jsonld: JsonLD): JsonLD {
-        if (jsonld["@graph"]) {
-            const graph: any[] = [];
-            jsonld["@graph"].forEach((ldResource: JsonLDResource) => {
-                const ld = {};
-                this.addKey(ld, ldResource);
-                graph.push(ld);
-            })
-            jsonld["@graph"] = graph
-            return jsonld
-        } else {
-            const ld: JsonLD = { "@context": jsonld["@context"] };
-            this.addKey(ld, jsonld)
-            return ld
-        }
-    }
-
-    /**
-     * Expands the URI of every property, that has an URI as a value. Used to remove Compact URIs
-     * @param result - JSON-LD object, that is the result of a SparQL Query
-     */
-    private expandPropertyValues(result: any) {
-        this.applyToObjects(result, (obj) => {
-            Object.keys(this.schema.properties).forEach((propertyName: string) => {
-                const propValue = obj[propertyName];
-                if (propValue) {
-                    const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
-                    if (propDefinition.type === "uri") {
-                        if (Array.isArray(this.schema.properties[propertyName])) {
-                            const values: string[] = [];
-                            const propPrefix = propDefinition.prefix;
-                            propValue.forEach((val: string) => {
-                                values.push(val.replace(`${propPrefix}:`, this.schema.prefixes[propPrefix]));
-                            })
-                            obj[propertyName] = values;
-                        } else {
-                            const propPrefix = propDefinition.prefix;
-                            obj[propertyName] = propValue.replace(`${propPrefix}:`, this.schema.prefixes[propPrefix]);
-                        }
-                    }
-                }
-            });
-        })
-    }
-
-    /**
-     * If available, expands the id and replaces it with a full uri. Example: schema:Person/Daniel to http://schema.org/Person/Daniel
-     * @param id 
-     */
-    private expandID(id: string): string {
-        const splitId = id.split(":");
-        if (splitId.length === 2) {
-            const schema = this.schema.prefixes[splitId[0]];
-            if (schema) {
-                return id.replace(`${splitId[0]}:`, schema);
+            if (propDefinition.ref) {
+                let identifierSplit = value.split("/");
+                let identifier = identifierSplit[identifierSplit.length - 1];
+                this.result[propertyName] = (await propDefinition.ref.findByIdentifier(identifier)).result;
+                return this;
             }
-            return id;
-        } else {
-            return id;
         }
-    }
-
-    /**
-     * 
-     * @param newLD - new object, that will contain property names without their uri
-     * @param oldLD - old object, that still contains compact uris
-     */
-    private addKey(newLD: JsonLD, oldLD: JsonLD) {
-        Object.keys(oldLD).forEach((key: string) => {
-            const splitKey = key.split(":");
-            if (key === "@id") {
-                if (oldLD["@id"]) {
-                    newLD["@id"] = this.expandID(oldLD["@id"])
-                }
-            } else {
-                if (splitKey.length === 2) {
-                    newLD[splitKey[1]] = oldLD[key]
-                } else {
-                    newLD[key] = oldLD[key]
-                }
-            }
-        })
     }
 
     private extractPropertiesFromJsonLD(defaultJson: defaultJsonLd) {

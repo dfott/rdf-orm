@@ -10,8 +10,8 @@ describe("RDFResult", function() {
         await blogData.Comment.create(blogData.exampleComment2).save();
     })
     after(async function() {
-        // await blogData.Blog.delete();
-        // await blogData.Comment.delete();
+        await blogData.Blog.delete();
+        await blogData.Comment.delete();
     })
     it("should populate the comment property of a blog, that contains 2 comments", async function() {
         const blog2 = await blogData.Blog.findByIdentifier(blogData.exampleBlog2.identifier);

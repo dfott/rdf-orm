@@ -1,67 +1,49 @@
+import { Schema, RDF } from "./RDF";
 import { RDFRequest } from "./RDFRequest";
-import { RDF, Schema } from "./RDF";
 
-import data from "./PersonTestData"
-import { RDFResult } from "./RDFResult";
-
-const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
-const Person = RDF.createModel(data.personSchemaAdvanced, req);
-
-const prefixList = {
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "foaf": "http://xmlns.com/foaf/0.1/",
-    "owl": "http://www.w3.org/2002/07/owl#",
+const prefixes = {
+    "rdf": "http://rdf.com/",
     "schema": "http://schema.org/",
+    "bayer": "http://10.122.106.16:3000/"
 };
 
 const CommentSchema: Schema = {
-    prefixes: prefixList,
-    resourceSchema: prefixList.schema,
+    resourceSchema: prefixes.bayer,
     resourceType: "Comment",
+    prefixes,
     properties: {
         content: { prefix: "rdf" }
     }
 }
 
+const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
+
 const Comment = RDF.createModel(CommentSchema, req);
 
 const BlogSchema: Schema = {
-    prefixes: prefixList,
-    resourceSchema: prefixList.schema,
+    resourceSchema: prefixes.bayer,
     resourceType: "Blog",
+    prefixes,
     properties: {
-        title: { prefix: "schema" },
-        comment: [{ prefix: "schema", optional: true, type: "uri", ref: Comment}]
+        title: { prefix: "rdf" },
+        comment: { type: "uri", ref: Comment, prefix: "rdf", optional: true}
     }
 }
 
 const Blog = RDF.createModel(BlogSchema, req);
 
-const blog1 = Blog.create({
-    identifier: "Blog1", title: "Mein zweiter Blog", comment: ["comment1", "comment2"]
-});
+const comment1 = Comment.create({ content: "Dies ist ein kommentar", identifier: "comment1"})
+const blog1 = Blog.create({ identifier: "Blog1", title: "Mein erster Blog", comment: "comment1"})
 
-// blog1.save().then(_ => {
-// });
+// comment1.save();
+// blog1.save();
 
-Blog.find().then((res: RDFResult) => {
-    // console.log(res.query)
+Blog.find().then(res => {
     console.log(res.result)
-
-    // res.populate("comment").then(res => {
-    //     console.log(res?.result);
-    // }) 
+    res.populate("comment").then(res2 => {
+        if (res2) {
+            console.log(res2.result)
+        }
+    })
 })
 
-// const c1 = Comment.create({
-//     identifier: "comment1", content:"Im the first comment"
-// });
-// c1.save();
-
-// const c2 = Comment.create({
-//     identifier: "comment2", content: "Im the second comment ever!"
-// })
-// c2.save()
-
-
-// console.log(personSchemaAdvanced.properties.knows)
