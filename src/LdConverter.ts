@@ -103,9 +103,6 @@ export class LdConverter {
                                 if (Array.isArray(schema.properties[propertyName])) {
                                     const values: string[] = [];
                                         propValue.forEach((val: string) => {
-                                            console.log(`replace in ${val}`)
-                                            console.log(`replace  ${propPrefix}:`)
-                                            console.log(`with  ${schema.prefixes[propPrefix]}:`)
                                             values.push(val.replace(`${propPrefix}:`, schema.prefixes[propPrefix]));
                                         })
                                         obj[propertyName] = values;

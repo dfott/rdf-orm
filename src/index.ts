@@ -7,43 +7,34 @@ const prefixes = {
     "bayer": "http://10.122.106.16:3000/"
 };
 
+
 const CommentSchema: Schema = {
-    resourceSchema: prefixes.bayer,
     resourceType: "Comment",
+    resourceSchema: prefixes.rdf,
     prefixes,
     properties: {
-        content: { prefix: "rdf" }
+        content: {
+            prefix: "schema"
+        }
     }
 }
 
-const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
+const request = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
 
-const Comment = RDF.createModel(CommentSchema, req);
+const Comment = RDF.createModel(CommentSchema, request);
+
+// const comment1 = Comment.create({ content: "Dies ist mein Kommentar", identifier: "comment1"})
 
 const BlogSchema: Schema = {
-    resourceSchema: prefixes.bayer,
     resourceType: "Blog",
+    resourceSchema: prefixes.rdf,
     prefixes,
     properties: {
-        title: { prefix: "rdf" },
-        comment: { type: "uri", ref: Comment, prefix: "rdf", optional: true}
+        title: { prefix: "rdf"},
+        comment: [{ type: "uri", ref: Comment, optional: true, prefix: "rdf" }]
     }
 }
 
-const Blog = RDF.createModel(BlogSchema, req);
+const Blog = RDF.createModel(BlogSchema, request);
 
-const comment1 = Comment.create({ content: "Dies ist ein kommentar", identifier: "comment1"})
-const blog1 = Blog.create({ identifier: "Blog1", title: "Mein erster Blog", comment: "comment1"})
-
-// comment1.save();
-// blog1.save();
-
-Blog.find().then(res => {
-    console.log(res.result)
-    res.populate("comment").then(res2 => {
-        if (res2) {
-            console.log(res2.result)
-        }
-    })
-})
-
+const blog1 = Blog.create({ identifier: "Blog1", title: "Mein Blog", comment: ["comment1"]})

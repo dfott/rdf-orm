@@ -1,4 +1,4 @@
-import { Schema, PropertyValues, PropertyList } from "./RDF";
+import { Schema, PropertyValues, PropertyList, Property } from "./RDF";
 import { QueryBuilder } from "./QueryBuilder";
 import { RDFRequest } from "./RDFRequest";
 import { defaultJsonLd, LdConverter } from "./LdConverter";
@@ -26,6 +26,10 @@ export interface JsonLDResource {
 export interface ContextObject {
     "@id": string;
     "@type"?: string;
+}
+
+export interface UriMap {
+    [uri: string]: [string]
 }
 
 /**
@@ -110,8 +114,71 @@ export class RDFResult {
         const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
         if (!propDefinition) { throw Error(`Cannot populate property ${propertyName} as it does'nt exist on the defined type ${this.schema.resourceType}.`) }
         if (propDefinition.type !== "uri") { throw Error(`Cannot populate property ${propertyName} as values of this property are defined to be literals.`) } 
-        const value = this.result[propertyName];
-        if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
+
+        if (this.result["@graph"]) {
+            return this.populateMultipleObjects(propertyName, this.result["@graph"], propDefinition);
+        } else {
+            const value = this.result[propertyName];
+            if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
+            return this.populateSingleObject(propertyName, value, propDefinition);
+        }
+    }
+
+    private async populateMultipleObjects(propertyName: string, objects: any[], propDefinition: Property) {
+        const requests: Promise<RDFResult>[] = [];
+        objects.forEach(obj => {
+            if (Array.isArray(this.schema.properties[propertyName])) {
+                if (Array.isArray(obj[propertyName])) {
+                    obj[propertyName].forEach((value: any) => {
+                        if (propDefinition.ref) {
+                            let identifierSplit = value.split("/");
+                            let identifier = identifierSplit[identifierSplit.length - 1];
+                            requests.push(propDefinition.ref.findByIdentifier(identifier));
+                        }
+                    })
+                }
+            } else {
+                const value = obj[propertyName];
+                if (propDefinition.ref) {
+                    let identifierSplit = value.split("/");
+                    let identifier = identifierSplit[identifierSplit.length - 1];
+                    requests.push(propDefinition.ref.findByIdentifier(identifier));
+                }
+            }
+        }) 
+        const populateResult = await Promise.all(requests);
+
+        objects.forEach(obj => {
+            if (Array.isArray(this.schema.properties[propertyName])) {
+                if (Array.isArray(obj[propertyName])) {
+                    obj[propertyName].forEach((value: any, index: number) => {
+                        const populateWith = populateResult.find((res: RDFResult) => {
+                            if (res.result["@id"]) {
+                                return res.result["@id"] === value
+                            }
+                        })
+                        if (populateWith) {
+                            obj[propertyName][index] = populateWith.result;
+                        }
+                    })
+                }
+            } else {
+                const value = obj[propertyName];
+                const populateWith = populateResult.find((res: RDFResult) => {
+                    if (res.result["@id"]) {
+                        return res.result["@id"] === value
+                    }
+                })
+                if (populateWith) {
+                    obj[propertyName] = populateWith.result;
+                }
+            }
+        })
+        return this;
+    }
+
+
+    private async populateSingleObject(propertyName: string, value: any, propDefinition: Property) {
         if (Array.isArray(value)) {
             const requests: Promise<RDFResult>[] = [];
             value.forEach((val: string) => {
