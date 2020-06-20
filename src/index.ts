@@ -23,7 +23,8 @@ const request = new RDFRequest("http://localhost:3030/testblog/query", "http://l
 
 const Comment = RDF.createModel(CommentSchema, request);
 
-// const comment1 = Comment.create({ content: "Dies ist mein Kommentar", identifier: "comment1"})
+const comment1 = Comment.create({ content: "Dies ist mein Kommentar", identifier: "comment1"})
+const comment2 = Comment.create({ content: "Dies ist zweite Komm", identifier: "comment2"})
 
 const BlogSchema: Schema = {
     resourceType: "Blog",
@@ -38,3 +39,16 @@ const BlogSchema: Schema = {
 const Blog = RDF.createModel(BlogSchema, request);
 
 const blog1 = Blog.create({ identifier: "Blog1", title: "Mein Blog", comment: ["comment1"]})
+const blog2 = Blog.create({ identifier: "Blog2", title: "Zweiter Blog", comment: ["comment1", "comment2"]})
+
+
+
+Blog.find().then(res => {
+
+    res.populate("comment").then(res => {
+        if (res) {
+            console.log(res.result["@graph"][1])
+        }
+    })
+
+})

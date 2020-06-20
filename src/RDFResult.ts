@@ -20,7 +20,7 @@ export interface JsonLD {
 export interface JsonLDResource {
     "@id": string;
     "@type": string;
-    [propname: string]: string;
+    [propname: string]: string | string[];
 }
 
 export interface ContextObject {
@@ -83,6 +83,12 @@ export class RDFResult {
         return Promise.resolve(updateQuery);
     }
 
+    /**
+     * Calls a given callback function for every JsonLDResource Object in the result. It is used because the JsonLD result of a construct query 
+     * returns the object directly in the resulting object or if there are multiple, they are saved in the @graph property.
+     * @param result 
+     * @param callback 
+     */
     private applyToObjects(result: any, callback: (obj: any) => void) {
         if (result["@graph"]) {
             result["@graph"].forEach((obj: any) => callback(obj))
@@ -91,6 +97,9 @@ export class RDFResult {
         }
     }
 
+    /**
+     * Converts the resulting property value to an array, if it was defined to be one in the schema
+     */
     private valueToArray() {
         this.applyToObjects(this.result, (obj) => {
             Object.keys(obj).forEach((key: string) => {
@@ -124,46 +133,67 @@ export class RDFResult {
         }
     }
 
-    private async populateMultipleObjects(propertyName: string, objects: any[], propDefinition: Property) {
+    /**
+     * Checks if the given property is an array and then executes a function based on if it is one or not. Used to populate an array of uri's or a single uri
+     * @param propValue 
+     * @param propertyName 
+     * @param isArray 
+     * @param isString 
+     */
+    private async callFunctionOnProperty(propValue: string | string[], propertyName: string, 
+            isArray: (propArray: string[]) => void, isString: (propString: string) => void) {
+        if (Array.isArray(propValue)) {
+            if (Array.isArray(this.schema.properties[propertyName])) {
+                isArray(propValue);
+            }
+        } else {
+            isString(propValue);
+        }
+    }
+
+    /**
+     * Populates the field of multiple objects
+     * @param propertyName 
+     * @param objects 
+     * @param propDefinition 
+     */
+    private async populateMultipleObjects(propertyName: string, objects: JsonLDResource[], propDefinition: Property) {
         const requests: Promise<RDFResult>[] = [];
         objects.forEach(obj => {
-            if (Array.isArray(this.schema.properties[propertyName])) {
-                if (Array.isArray(obj[propertyName])) {
-                    obj[propertyName].forEach((value: any) => {
-                        if (propDefinition.ref) {
-                            let identifierSplit = value.split("/");
-                            let identifier = identifierSplit[identifierSplit.length - 1];
-                            requests.push(propDefinition.ref.findByIdentifier(identifier));
-                        }
-                    })
-                }
-            } else {
-                const value = obj[propertyName];
+            const prop = obj[propertyName];
+            this.callFunctionOnProperty(prop, propertyName, (propArray: string[]) => {
+                propArray.forEach((value: any) => {
+                    if (propDefinition.ref) {
+                        let identifierSplit = value.split("/");
+                        let identifier = identifierSplit[identifierSplit.length - 1];
+                        requests.push(propDefinition.ref.findByIdentifier(identifier));
+                    }
+                })
+            }, (propString: string) => {
                 if (propDefinition.ref) {
-                    let identifierSplit = value.split("/");
+                    let identifierSplit = propString.split("/");
                     let identifier = identifierSplit[identifierSplit.length - 1];
                     requests.push(propDefinition.ref.findByIdentifier(identifier));
                 }
-            }
-        }) 
+            })
+        });
         const populateResult = await Promise.all(requests);
 
         objects.forEach(obj => {
-            if (Array.isArray(this.schema.properties[propertyName])) {
-                if (Array.isArray(obj[propertyName])) {
-                    obj[propertyName].forEach((value: any, index: number) => {
-                        const populateWith = populateResult.find((res: RDFResult) => {
-                            if (res.result["@id"]) {
-                                return res.result["@id"] === value
-                            }
-                        })
-                        if (populateWith) {
-                            obj[propertyName][index] = populateWith.result;
+            const prop = obj[propertyName];
+            this.callFunctionOnProperty(prop, propertyName, (propArray: string[]) => {
+                propArray.forEach((value: any, index: number) => {
+                    const populateWith = populateResult.find((res: RDFResult) => {
+                        if (res.result["@id"]) {
+                            return res.result["@id"] === value
                         }
                     })
-                }
-            } else {
-                const value = obj[propertyName];
+                    if (populateWith) {
+                        propArray[index] = populateWith.result;
+                    }
+                })
+            }, (propString: string) => {
+                const value = propString;
                 const populateWith = populateResult.find((res: RDFResult) => {
                     if (res.result["@id"]) {
                         return res.result["@id"] === value
@@ -172,12 +202,17 @@ export class RDFResult {
                 if (populateWith) {
                     obj[propertyName] = populateWith.result;
                 }
-            }
-        })
+            });
+        });
         return this;
     }
 
-
+    /**
+     * Populates the property of one single object
+     * @param propertyName 
+     * @param value 
+     * @param propDefinition 
+     */
     private async populateSingleObject(propertyName: string, value: any, propDefinition: Property) {
         if (Array.isArray(value)) {
             const requests: Promise<RDFResult>[] = [];
