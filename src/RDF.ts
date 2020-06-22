@@ -1,6 +1,7 @@
 import { RDFResult } from "./RDFResult"
 import { QueryBuilder } from "./QueryBuilder"
 import { RDFRequest } from "./RDFRequest"
+import { LdConverter } from "./LdConverter";
 export interface PrefixList {
     [prefix: string]: string,
 }
@@ -8,7 +9,7 @@ export interface PrefixList {
 export interface Property {
     prefix: string;
     optional?: boolean;
-    type?: "uri";
+    type?: "uri" | "integer";
     ref?: IRDFModel;
     isKey?: boolean;
 }
@@ -76,9 +77,11 @@ export class RDF {
             async find(findParameters?: FindParameters): Promise<RDFResult> {
                 const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
-                const result = await request.query(selectQuery, { "Accept": "application/ld+json" });
+                const result = await request.query(selectQuery, { "Accept": "application/n-quads" });
+                const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
+                await rdfResult.convertToLD(LdConverter.buildContext(schema.properties, schema.prefixes))
                 return Promise.resolve(
-                    new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
+                    rdfResult 
                 );
             }
 
@@ -89,9 +92,11 @@ export class RDF {
             async findByIdentifier(identifier: string): Promise<RDFResult> {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 // console.log(selectQuery)
-                const result = await request.query(selectQuery, { "Accept": "application/ld+json" }); 
+                const result = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
+                const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
+                await rdfResult.convertToLD(LdConverter.buildContext(schema.properties, schema.prefixes))
                 return Promise.resolve(
-                    new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
+                    rdfResult
                 );
             }
 

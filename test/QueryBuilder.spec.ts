@@ -19,18 +19,22 @@ ${StringGenerator.insertString(data.propertyList, data.danielValues, data.resour
     assert.equal(builder.buildInsert(), expectedInsertString);
     })
 
-    it.skip("should build a select query, that would select every tuple that is modelling the specified schema", function() {
+    it("should build a construct query, that would select every tuple that is modelling the specified schema", function() {
         const expectedSelectString = `${StringGenerator.prefixString(data.prefixList)}\n\n`
-            .concat(`select ${StringGenerator.selectString(data.propertyList, data.resourceType)}\n`)
+            .concat(`construct {\n`)
+            .concat(StringGenerator.constructString(data.propertyList, data.resourceType))
+            .concat(`\n}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(data.propertyList, data.resourceType)}\n`)
             .concat(`}`);
         assert.equal(QueryBuilder.buildFind(data.personSchema), expectedSelectString);
     })
 
-    it.skip("should build a select query, that would select all filtered tuples, that modell the specified schema", function() {
+    it("should build a construct query, that would select all filtered tuples, that model the specified schema", function() {
         const expectedSelectString = `${StringGenerator.prefixString(data.prefixList)}\n\n`
-            .concat(`select ${StringGenerator.selectString(data.propertyList, data.resourceType)}\n`)
+            .concat(`construct {\n`)
+            .concat(StringGenerator.constructString(data.propertyList, data.resourceType))
+            .concat(`\n}\n`)
             .concat(`where {\n`)
             .concat(`${StringGenerator.whereString(data.propertyList, data.resourceType)}\n`)
             .concat(`${StringGenerator.whereStringFiltered(data.propertyList, data.findParameterList, data.resourceType)}\n`)

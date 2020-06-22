@@ -4,6 +4,8 @@ import { RDFRequest } from "./RDFRequest";
 import { defaultJsonLd, LdConverter } from "./LdConverter";
 import { StringGenerator } from "./StringGenerator";
 
+import * as jsonld from "jsonld";
+
 export interface JsonLD {
     "@graph"?: any[]
     // [JsonLDResource | undefined];
@@ -21,6 +23,10 @@ export interface JsonLDResource {
     "@id": string;
     "@type": string;
     [propname: string]: string | string[];
+}
+
+export interface Context {
+    [propName: string]: ContextObject
 }
 
 export interface ContextObject {
@@ -51,13 +57,21 @@ export class RDFResult {
     constructor(private request: RDFRequest, private schema: Schema, public values: PropertyValues, public query?: string, public result?: any) {
         this.builder = new QueryBuilder(this.schema, this.values);
         if (result) { 
-            this.values = this.extractPropertiesFromJsonLD(result);
-            this.result = LdConverter.removeCompactUri(this.result)
-            LdConverter.expandID(this.result, this.schema.prefixes);
-            this.valueToArray();
-            LdConverter.expandPropertyValues(this.result, this.schema);
+            // this.values = this.extractPropertiesFromJsonLD(result);
+            // this.result = LdConverter.removeCompactUri(this.result)
+            // LdConverter.expandID(this.result, this.schema.prefixes);
+            // this.valueToArray();
+            // LdConverter.expandPropertyValues(this.result, this.schema);
             this.updated = true;
         } 
+    }
+
+    public async convertToLD(context: Context) {
+        if (this.result) {
+            const ld = await jsonld.fromRDF(this.result)
+            const fullLd = await jsonld.compact(ld, context)
+            this.result = fullLd;
+        }
     }
 
     /**

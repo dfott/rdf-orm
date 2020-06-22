@@ -1,6 +1,7 @@
 import { Schema, PropertyList, PropertyValues, PrefixList } from "./RDF";
 import { JsonLD, JsonLDResource } from "./RDFResult";
 import { StringGenerator } from "./StringGenerator";
+import { Context } from "./RDFResult";
 
 export interface defaultJsonLd {
     "@id": string;
@@ -16,6 +17,12 @@ interface defaultContext {
 
 export class LdConverter {
 
+    /**
+     * Takes a callback function and a jsonld result. If the jsonld contains multiple objects, they are stored in the @graph key.
+     * The function is then called, using the single objects as the argument.
+     * @param jsonld 
+     * @param callback 
+     */
     private static applyFunctionToResult(jsonld: JsonLD, callback: (result: JsonLD) => void) {
         if (jsonld["@graph"]) {
             jsonld["@graph"].forEach((res: JsonLD) => {
@@ -48,7 +55,8 @@ export class LdConverter {
     }
 
     /**
-     * 
+     * Takes a jsonld object, which is filled with properties that can contain compact uris and an empty object. It then removes every
+     * compact uri if found and stores every property in the new jsonld object.
      * @param newLD - new object, that will contain property names without their uri
      * @param oldLD - old object, that still contains compact uris
      */
@@ -115,6 +123,24 @@ export class LdConverter {
                 }
             });
         })
+    }
+
+    public static buildContext(propertyList: PropertyList, prefixes: PrefixList) {
+        const context: Context = {};
+        Object.keys(propertyList).forEach(propName => {
+            const propDefinition = StringGenerator.getProperty(propertyList[propName]);
+            const schema = `${prefixes[propDefinition.prefix]}${propName}`;
+            if (propDefinition.type) {
+                if (propDefinition.type === "integer") {
+                    context[propName] = { "@id": schema, "@type": "http://www.w3.org/2001/XMLSchema#integer" };
+                } else if (propDefinition.type === "uri") {
+                    context[propName] = { "@id": schema, "@type": "@id" };
+                }
+            } else {
+                context[propName] = { "@id": schema };
+            }
+        })
+        return context;
     }
 
 }
