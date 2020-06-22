@@ -23,3 +23,10 @@ const Person = RDF.createModel(PersonSchema, req);
 const Blog = RDF.createModel(blogData.BlogSchema, req);
 const Comment = RDF.createModel(blogData.CommentSchema, req);
 
+
+(async function() {
+
+
+    console.log(await (await Blog.find()).result["@graph"])
+
+})()

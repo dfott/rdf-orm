@@ -5,18 +5,14 @@ import { defaultJsonLd, LdConverter } from "./LdConverter";
 import { StringGenerator } from "./StringGenerator";
 
 import * as jsonld from "jsonld";
+import { JsonLdObj } from "jsonld/jsonld-spec";
 
 export interface JsonLD {
-    "@graph"?: any[]
-    // [JsonLDResource | undefined];
+    "@graph"?: JsonLDResource[]
     "@id"?: string;
     "@type"?: string;
     [propname: string]: any
-    "@context"?: any
-    // {
-    //     [propname: string]: ContextObject | string,
-    // };
-    // [propname: string]: string
+    "@context"?: Context
 }
 
 export interface JsonLDResource {
@@ -24,6 +20,14 @@ export interface JsonLDResource {
     "@type": string;
     [propname: string]: string | string[];
 }
+
+export interface RawJsonLDResource {
+    "@id": string;
+    "@type": string;
+    [propname: string]: string | string[] | RawLDValue;
+}
+
+export interface RawLDValue { "@type": string, "@value": string}
 
 export interface Context {
     [propName: string]: ContextObject
@@ -57,11 +61,6 @@ export class RDFResult {
     constructor(private request: RDFRequest, private schema: Schema, public values: PropertyValues, public query?: string, public result?: any) {
         this.builder = new QueryBuilder(this.schema, this.values);
         if (result) { 
-            // this.values = this.extractPropertiesFromJsonLD(result);
-            // this.result = LdConverter.removeCompactUri(this.result)
-            // LdConverter.expandID(this.result, this.schema.prefixes);
-            // this.valueToArray();
-            // LdConverter.expandPropertyValues(this.result, this.schema);
             this.updated = true;
         } 
     }
@@ -71,7 +70,43 @@ export class RDFResult {
             const ld = await jsonld.fromRDF(this.result)
             const fullLd = await jsonld.compact(ld, context)
             this.result = fullLd;
+            this.convertLDValues(this.result);
         }
+    }
+
+    /**
+     * If a property is an object with key @value, set the value of this property to be the value of the object.
+     * Also inserts the values in an array if they were defined to be one in the schema
+     * @param jsonld 
+     */
+    public async convertLDValues(jsonld: JsonLD) {
+        this.applyToObjects(jsonld, (obj: RawJsonLDResource) => {
+            Object.keys(obj).forEach(propName => {
+                const propDefinition = this.schema.properties[propName]
+                const prop = obj[propName];
+                if (typeof prop !== "string" && !Array.isArray(prop)) {
+                    if (prop["@value"]) {
+                        obj[propName] = this.valueToArray(prop["@value"], propDefinition);
+                    }
+                } else {
+                    obj[propName] = this.valueToArray(prop, propDefinition);
+                }
+            })
+        })
+    }
+
+    /**
+     * Converts the resulting property value to an array, if it was defined to be one in the schema
+     */
+    private valueToArray(value: string | string[], propDefinition: Property | Property[]): string | string[] {
+        if (propDefinition) {
+            if (Array.isArray(propDefinition)) {
+                if (!Array.isArray(value)) {
+                    return [value]
+                }
+            }
+        }
+        return value;
     }
 
     /**
@@ -109,24 +144,6 @@ export class RDFResult {
         } else {
             callback(result);
         }
-    }
-
-    /**
-     * Converts the resulting property value to an array, if it was defined to be one in the schema
-     */
-    private valueToArray() {
-        this.applyToObjects(this.result, (obj) => {
-            Object.keys(obj).forEach((key: string) => {
-                const propDefinition = StringGenerator.getProperty(this.schema.properties[key]); 
-                if (propDefinition) {
-                    if (Array.isArray(this.schema.properties[key])) {
-                        if (!Array.isArray(obj[key])) {
-                            obj[key] = [obj[key]];
-                        }
-                    }
-                }
-            })
-        })
     }
 
     /**
@@ -250,34 +267,6 @@ export class RDFResult {
                 return this;
             }
         }
-    }
-
-    private extractPropertiesFromJsonLD(defaultJson: defaultJsonLd) {
-        const propertyValues = {} as PropertyValues;
-        Object.keys(defaultJson).forEach((key: string) => {
-            if (this.propertyExists(key, this.schema.properties)) {
-                propertyValues[key] = defaultJson[key];
-            } else if (this.propertyExists(key.split(":")[1], this.schema.properties)) {
-                propertyValues[key.split(":")[1]] = defaultJson[key];
-            } else if (key === "@id") {
-                // -------------- TODO -----------------------------
-                // make sure that this function can be applied to most of the use cases + write tests to confirm
-                const id = defaultJson["@id"];
-                const split = id.split("/");
-                if (split.length >= 2) {
-                    propertyValues.identifier = split[split.length - 1];
-                //     const resourceSchema = this.schema.prefixes[split[0]];
-                //     propertyValues.identifier = `${resourceSchema}${
-                //         id.substr(id.indexOf(":") + 1)
-                //     }`;
-                }
-            }
-        })
-        return propertyValues;
-    } 
-
-    private propertyExists(key: string, properties: PropertyList): boolean {
-        return Object.keys(properties).indexOf(key) !== -1;
     }
 
 }
