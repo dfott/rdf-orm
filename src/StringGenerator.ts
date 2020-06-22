@@ -57,7 +57,10 @@ export class StringGenerator {
      * @param resourceType - Type of the modelled resource
      */
     public static insertString(properties: PropertyList, values: PropertyValues, resourceSchema: string, resourceType: string) : string {
-        const uri = `${resourceSchema}${resourceType}/${values.identifier}`;
+        // !TODO find a new method to get the full identifier
+        values.identifier = values.identifier.replace(resourceSchema, "").replace(`${resourceType}/`, "");
+        let uri = `${resourceSchema}${resourceType}/${values.identifier}`;
+
         if (!values.identifier) { throw Error("Identifier for this resource is missing in the PropertyValues.") }
         const statementList: string[] = [];
         Object.keys(values).forEach((propertyName: string) => {
@@ -86,7 +89,9 @@ export class StringGenerator {
             const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
             statementList.push(`<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`);
         } else {
-            value = typeof value === "string" ? `"${value}"` : value;
+            if (property.type !== "integer") {
+                value = typeof value === "string" ? `"${value}"` : value;
+            }
             if (!value) { throw Error(`No value given for property '${propertyName}'.`) }
             if (!property) { throw Error(`Property ${propertyName} is not part of the defined schema.`) }
             statementList.push(`<${uri}> ${property.prefix}:${propertyName} ${value}`);
@@ -103,7 +108,8 @@ export class StringGenerator {
         return Object.keys(findParameters).map((findParam: string) => {
             const property = this.getProperty(properties[findParam]);
             if (!property) throw Error(`Cannot filter by property ${findParam} as it is not a property of type ${resourceType}.`)
-            const value = typeof findParameters[findParam] === "string" ? `"${findParameters[findParam]}"` : findParameters[findParam];
+            // const value = typeof findParameters[findParam] === "string" ? `"${findParameters[findParam]}"` : findParameters[findParam];
+            const value = this.getValue(findParameters, findParam, properties);
             return `?${resourceType} ${property.prefix}:${findParam} ${value} .`;
         }).join("\n")
     }
@@ -127,6 +133,12 @@ export class StringGenerator {
     public static getProperty(property: Property | Property[]): Property {
         const prop = (property as Property) || (property as Property[])
         return Array.isArray(prop) ? prop[0] : prop
+    }
+
+    public static getValue(findParameters: FindParameters, findParam: string, properties: PropertyList): string {
+        const propDef = this.getProperty(properties[findParam]);
+        const val = findParameters[findParam];
+        return propDef.type === "integer" ? `${val}` : `"${val}"`;
     }
 
 }

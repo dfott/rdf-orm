@@ -84,14 +84,14 @@ describe("RDF", function() {
         assert.equal(foundDaniel.result.age, data.danielValues.age);
         assert.equal(foundDaniel.result["@id"], `${data.resourceSchema}${data.resourceType}/${data.danielValues.identifier}`);
     })
-    it.skip("should update the firstname and lastname of the resource and save it in the triplestore", async function() {
+    it("should update the firstname and lastname of the resource and save it in the triplestore", async function() {
         let daniel = await Person.findByIdentifier("DanielFott");
 
         assert.equal(daniel.result.firstname, data.danielValues.firstname);
         assert.equal(daniel.result.lastname, data.danielValues.lastname);
 
-        daniel.values.firstname = "Dan";
-        daniel.values.lastname = "Iel";
+        daniel.result.firstname = "Dan";
+        daniel.result.lastname = "Iel";
         await daniel.save();
 
         daniel = await Person.findByIdentifier("DanielFott");
@@ -100,7 +100,8 @@ describe("RDF", function() {
         assert.equal(daniel.result.lastname, "Iel");
     })
     it("should find resources and their properties, based on the given filters", async function() {
-        const results = (await Person.find({ age: 20 })).result;
+        const persons = (await Person.find({ age: "20" }))
+        const results = persons.result;
 
         assert.isNotNull(results["@graph"]);
         assert.isArray(results["@graph"]);

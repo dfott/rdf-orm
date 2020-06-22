@@ -127,9 +127,19 @@ export class RDFResult {
      * Updates the tupels in the triplestore to contain the values of the result object.
      */
     private async update(): Promise<string> {
-        const updateQuery = this.builder.buildUpdate(this.values);
-        await this.request.update(updateQuery);
-        return Promise.resolve(updateQuery);
+        if (!this.result["@graph"]) {
+            const values: PropertyValues = { identifier: this.result["@id"]};
+            Object.keys(this.result).forEach(propName => {
+                if (this.schema.properties[propName]) {
+                    values[propName] = this.result[propName];
+                }
+            })
+            const updateQuery = this.builder.buildUpdate(values);
+            await this.request.update(updateQuery);
+            return Promise.resolve(updateQuery);
+        } else {
+            return Promise.resolve("Cannot update whole list");
+        }
     }
 
     /**

@@ -27,6 +27,7 @@ const Comment = RDF.createModel(blogData.CommentSchema, req);
 (async function() {
 
 
-    console.log(await (await Blog.find()).result["@graph"])
+    console.log(await (await Person.find({ age: 20})).result)
+
 
 })()

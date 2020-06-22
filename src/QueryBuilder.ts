@@ -21,10 +21,11 @@ export class QueryBuilder {
      * @param values - values for every property of the model
      */
     public buildUpdate(values: PropertyValues) {
+        const constructGraphPattern = StringGenerator.constructString(this.schema.properties, this.schema.resourceType);
         const whereGraphPattern = StringGenerator.whereString(this.schema.properties, this.schema.resourceType);
         return `${StringGenerator.prefixString(this.schema.prefixes)}\n\n`
             .concat(`delete {\n`)
-            .concat(`${whereGraphPattern}`)
+            .concat(`${constructGraphPattern}`)
             .concat(`\n}\n`)
             .concat(`insert {\n`)
             .concat(StringGenerator.insertString(this.schema.properties, values, this.schema.resourceSchema, this.schema.resourceType))

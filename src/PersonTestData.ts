@@ -11,7 +11,7 @@ const prefixList = {
 const propertyList = {
     firstname: { prefix: "rdf" },
     lastname: { prefix: "rdf" },
-    age: { prefix: "schema" }
+    age: { prefix: "schema", type: "integer" }
 } as PropertyList;
 
 const danielValues = {
