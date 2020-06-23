@@ -160,17 +160,17 @@ export class RDFResult {
      * Replaces the uri of the specified property with the object is inside the triplestore
      * @param propertyName 
      */
-    public async populate(propertyName: string) {
+    public async populate(propertyName: string): Promise<RDFResult> {
         const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
         if (!propDefinition) { throw Error(`Cannot populate property ${propertyName} as it does'nt exist on the defined type ${this.schema.resourceType}.`) }
         if (propDefinition.type !== "uri") { throw Error(`Cannot populate property ${propertyName} as values of this property are defined to be literals.`) } 
 
         if (this.result["@graph"]) {
-            return this.populateMultipleObjects(propertyName, this.result["@graph"], propDefinition);
+            return await this.populateMultipleObjects(propertyName, this.result["@graph"], propDefinition);
         } else {
             const value = this.result[propertyName];
             if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
-            return this.populateSingleObject(propertyName, value, propDefinition);
+            return await this.populateSingleObject(propertyName, value, propDefinition);
         }
     }
 
@@ -198,7 +198,7 @@ export class RDFResult {
      * @param objects 
      * @param propDefinition 
      */
-    private async populateMultipleObjects(propertyName: string, objects: JsonLDResource[], propDefinition: Property) {
+    private async populateMultipleObjects(propertyName: string, objects: JsonLDResource[], propDefinition: Property): Promise<RDFResult> {
         const requests: Promise<RDFResult>[] = [];
         objects.forEach(obj => {
             const prop = obj[propertyName];
@@ -245,7 +245,7 @@ export class RDFResult {
                 }
             });
         });
-        return this;
+        return Promise.resolve(this);
     }
 
     /**
@@ -254,7 +254,7 @@ export class RDFResult {
      * @param value 
      * @param propDefinition 
      */
-    private async populateSingleObject(propertyName: string, value: any, propDefinition: Property) {
+    private async populateSingleObject(propertyName: string, value: any, propDefinition: Property): Promise<RDFResult> {
         if (Array.isArray(value)) {
             const requests: Promise<RDFResult>[] = [];
             value.forEach((val: string) => {
@@ -265,7 +265,6 @@ export class RDFResult {
                 }
             })
             const populatedResult = await Promise.all(requests);
-
             this.result[propertyName] = populatedResult.map(populatedResult => populatedResult.result);
 
             return this;
@@ -277,6 +276,7 @@ export class RDFResult {
                 return this;
             }
         }
+        return this;
     }
 
 }

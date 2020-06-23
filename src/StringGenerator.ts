@@ -57,6 +57,7 @@ export class StringGenerator {
      * @param resourceType - Type of the modelled resource
      */
     public static insertString(properties: PropertyList, values: PropertyValues, resourceSchema: string, resourceType: string) : string {
+
         // !TODO find a new method to get the full identifier
         values.identifier = values.identifier.replace(resourceSchema, "").replace(`${resourceType}/`, "");
         let uri = `${resourceSchema}${resourceType}/${values.identifier}`;
