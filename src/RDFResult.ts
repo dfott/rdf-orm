@@ -21,6 +21,19 @@ export interface JsonLDResource {
     [propname: string]: string | string[];
 }
 
+export interface LDResource {
+    "@id": string,
+    "@type": string,
+    "@context": Context,
+    [propName: string]: any,
+    save: () => Promise<void>
+}
+
+export interface LDResourceList {
+    "@graph": Array<LDResource>;
+    "@context": Context;
+}
+
 export interface RawJsonLDResource {
     "@id": string;
     "@type": string;
@@ -68,10 +81,52 @@ export class RDFResult {
     public async convertToLD(context: Context) {
         if (this.result) {
             const ld = await jsonld.fromRDF(this.result)
-            const fullLd = await jsonld.compact(ld, context)
+            const fullLd = await jsonld.compact(ld, context);
             this.result = fullLd;
             this.convertLDValues(this.result);
         }
+    }
+
+    public async convertToSingleLD(context: Context): Promise<LDResource> {
+        if (this.result) {
+            const ld = await jsonld.fromRDF(this.result)
+            const fullLd = await jsonld.compact(ld, context);
+            this.result = fullLd;
+            this.convertLDValues(this.result);
+            const ldResource = { ...this.result };
+            ldResource.save = () => this.update(ldResource, this.schema); 
+            return Promise.resolve(ldResource);
+        } else {
+            return Promise.resolve(this.result);
+        }
+    }
+
+    public async convertToLDList(context: Context): Promise<LDResourceList> {
+        if (this.result) {
+            const ld = await jsonld.fromRDF(this.result)
+            const fullLd = await jsonld.compact(ld, context);
+            this.result = fullLd;
+            this.convertLDValues(this.result);
+            if (this.result["@graph"]) {
+                this.result["@graph"].forEach((obj: any) => obj.save = this.update);
+            } else {
+                // if there was a single object returned, manually adds the @graph property as an array and add the object to this list
+                let ldResource = Object.assign({}, this.result);
+                ldResource.save = this.update;
+                delete ldResource["@context"];
+                ldResource = {
+                    "@context": this.result["@context"],
+                    "@graph": [{ ...ldResource }]
+                }
+                this.result = ldResource;
+            }
+        } else {
+            this.result = {
+                "@context": context,
+                "@graph": [],
+            };
+        }
+        return Promise.resolve(this.result)
     }
 
     /**
@@ -94,6 +149,7 @@ export class RDFResult {
             })
         })
     }
+
 
     /**
      * Converts the resulting property value to an array, if it was defined to be one in the schema
@@ -119,19 +175,19 @@ export class RDFResult {
             await this.request.update(insertQuery);
             return Promise.resolve(insertQuery);
         } else {
-            return this.update();
+            return this.update(this.result, this.schema);
         }
     }
 
     /**
      * Updates the tupels in the triplestore to contain the values of the result object.
      */
-    private async update(): Promise<string> {
+    private async update(ldResource: LDResource, schema: Schema): Promise<string> {
         if (!this.result["@graph"]) {
-            const values: PropertyValues = { identifier: this.result["@id"]};
-            Object.keys(this.result).forEach(propName => {
-                if (this.schema.properties[propName]) {
-                    values[propName] = this.result[propName];
+            const values: PropertyValues = { identifier: ldResource["@id"]};
+            Object.keys(ldResource).forEach(propName => {
+                if (schema.properties[propName]) {
+                    values[propName] = ldResource[propName];
                 }
             })
             const updateQuery = this.builder.buildUpdate(values);
@@ -192,6 +248,15 @@ export class RDFResult {
         }
     }
 
+    private async pushRequest(value: string, propDefinition: Property, requests: Promise<RDFResult>[]) {
+        if (propDefinition.ref) {
+            let identifierSplit = value.split("/");
+            let identifier = identifierSplit[identifierSplit.length - 1];
+            // !TODO FIX!!!
+            // requests.push(propDefinition.ref.findByIdentifier(identifier));
+        }
+    }
+
     /**
      * Populates the field of multiple objects
      * @param propertyName 
@@ -204,18 +269,10 @@ export class RDFResult {
             const prop = obj[propertyName];
             this.callFunctionOnProperty(prop, propertyName, (propArray: string[]) => {
                 propArray.forEach((value: any) => {
-                    if (propDefinition.ref) {
-                        let identifierSplit = value.split("/");
-                        let identifier = identifierSplit[identifierSplit.length - 1];
-                        requests.push(propDefinition.ref.findByIdentifier(identifier));
-                    }
+                    this.pushRequest(value, propDefinition, requests);
                 })
             }, (propString: string) => {
-                if (propDefinition.ref) {
-                    let identifierSplit = propString.split("/");
-                    let identifier = identifierSplit[identifierSplit.length - 1];
-                    requests.push(propDefinition.ref.findByIdentifier(identifier));
-                }
+                this.pushRequest(propString, propDefinition, requests);
             })
         });
         const populateResult = await Promise.all(requests);
@@ -258,11 +315,7 @@ export class RDFResult {
         if (Array.isArray(value)) {
             const requests: Promise<RDFResult>[] = [];
             value.forEach((val: string) => {
-                if (propDefinition.ref) {
-                    let identifierSplit = val.split("/");
-                    let identifier = identifierSplit[identifierSplit.length - 1];
-                    requests.push(propDefinition.ref.findByIdentifier(identifier));
-                }
+                this.pushRequest(val, propDefinition, requests);
             })
             const populatedResult = await Promise.all(requests);
             this.result[propertyName] = populatedResult.map(populatedResult => populatedResult.result);

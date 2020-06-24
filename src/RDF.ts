@@ -1,4 +1,4 @@
-import { RDFResult } from "./RDFResult"
+import { RDFResult, LDResource, LDResourceList } from "./RDFResult"
 import { QueryBuilder } from "./QueryBuilder"
 import { RDFRequest } from "./RDFRequest"
 import { LdConverter } from "./LdConverter";
@@ -49,8 +49,8 @@ export interface ObjectValues {
 export interface IRDFModel {
     schema?: Schema;
     create(values: PropertyValues): RDFResult
-    find(findParameters?: FindParameters): Promise<RDFResult>
-    findByIdentifier(identifier: string): Promise<RDFResult>
+    find(findParameters?: FindParameters): Promise<LDResourceList>
+    findByIdentifier(identifier: string): Promise<LDResource>
     delete(findParameters?: FindParameters): Promise<boolean>
     deleteByIdentifier(identifier: string): Promise<boolean>
 }
@@ -74,14 +74,14 @@ export class RDF {
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them.
              * @param findParameters? - optional object, that can contain properties and their values to filter the result 
              */
-            async find(findParameters?: FindParameters): Promise<RDFResult> {
+            async find(findParameters?: FindParameters): Promise<LDResourceList> {
                 const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
                 const result = await request.query(selectQuery, { "Accept": "application/n-quads" });
                 const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
-                await rdfResult.convertToLD(LdConverter.buildContext(schema.properties, schema.prefixes))
+                const res = await rdfResult.convertToLDList(LdConverter.buildContext(schema.properties, schema.prefixes))
                 return Promise.resolve(
-                    rdfResult 
+                    res
                 );
             }
 
@@ -89,14 +89,14 @@ export class RDF {
              * Finds a resource and its properties, based on the given identifier 
              * @param identifier 
              */
-            async findByIdentifier(identifier: string): Promise<RDFResult> {
+            async findByIdentifier(identifier: string): Promise<LDResource> {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 // console.log(selectQuery)
                 const result = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
                 const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
-                await rdfResult.convertToLD(LdConverter.buildContext(schema.properties, schema.prefixes))
+                const res = await rdfResult.convertToSingleLD(LdConverter.buildContext(schema.properties, schema.prefixes))
                 return Promise.resolve(
-                    rdfResult
+                    res
                 );
             }
 

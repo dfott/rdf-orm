@@ -16,19 +16,19 @@ describe("RDFResult", function() {
     it("should populate the comment property of a blog, that contains 2 comments", async function() {
         const blog2 = await blogData.Blog.findByIdentifier(blogData.exampleBlog2.identifier);
 
-        assert.equal(blog2.result.title, blogData.exampleBlog2.title);
+        assert.equal(blog2.title, blogData.exampleBlog2.title);
         // assert.equal(blog2.result.comment[0], blogData.exampleBlog2.comment[0])
         // assert.equal(blog2.result.comment[1], blogData.exampleBlog2.comment[1])
-        assert.isArray(blog2.result.comment);
-        assert.lengthOf(blog2.result.comment, 2);
-        assert.typeOf(blog2.result.comment[0], "string");
-        assert.typeOf(blog2.result.comment[1], "string");
+        assert.isArray(blog2.comment);
+        assert.lengthOf(blog2.comment, 2);
+        assert.typeOf(blog2.comment[0], "string");
+        assert.typeOf(blog2.comment[1], "string");
 
         await blog2.populate("comment")
 
         if (blog2.result) {
-            assert.typeOf(blog2.result.comment[0], "object");
-            assert.typeOf(blog2.result.comment[1], "object");
+            assert.typeOf(blog2.comment[0], "object");
+            assert.typeOf(blog2.comment[1], "object");
         }
     })
 })

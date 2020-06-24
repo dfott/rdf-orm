@@ -8,7 +8,8 @@ const prefixes = {
     "schema": "http://schema.org/",
 }
 
-const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
+const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
+// const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 
 const CommentSchema: Schema = {
     prefixes: prefixes,

@@ -26,18 +26,14 @@ const Comment = RDF.createModel(blogData.CommentSchema, req);
 
 (async function() {
 
+    const blog = await Blog.findByIdentifier("blog2" )
 
-    // const blogs = await (await Blog.find()).populate("comment");
-    // const blogs = await Blog.find();
-    const blog = await Blog.findByIdentifier("blog1")
+    blog.title = "Zweiter veränderter Blog";
 
-    const populated = await blog.populate("comment");
+    await blog.save()
 
-    console.log(populated.result)
-    // console.log(blogs.result["@graph"])
-
-    // if (blogs) {
-    //     console.log(blogs.result["@graph"])
-    // }
+    console.log(
+        await Blog.findByIdentifier("blog2")
+    )
 
 })()
