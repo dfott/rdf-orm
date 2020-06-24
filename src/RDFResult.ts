@@ -26,12 +26,14 @@ export interface LDResource {
     "@type": string,
     "@context": Context,
     [propName: string]: any,
-    save: () => Promise<void>
+    save: () => Promise<string>,
+    populate: (propertyName: string) => Promise<LDResource>,
 }
 
 export interface LDResourceList {
     "@graph": Array<LDResource>;
     "@context": Context;
+    populate: (propertyName: string) => Promise<LDResourceList[]>;
 }
 
 export interface RawJsonLDResource {
@@ -93,8 +95,10 @@ export class RDFResult {
             const fullLd = await jsonld.compact(ld, context);
             this.result = fullLd;
             this.convertLDValues(this.result);
-            const ldResource = { ...this.result };
+            const ldResource: LDResource = { ...this.result };
             ldResource.save = () => this.update(ldResource, this.schema); 
+            ldResource.populate = (propertyName: string) => 
+                this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), ldResource)
             return Promise.resolve(ldResource);
         } else {
             return Promise.resolve(this.result);
@@ -108,11 +112,20 @@ export class RDFResult {
             this.result = fullLd;
             this.convertLDValues(this.result);
             if (this.result["@graph"]) {
-                this.result["@graph"].forEach((obj: any) => obj.save = this.update);
+                this.result["@graph"].forEach((obj: LDResource) => { 
+                    obj.save = () => this.update(obj, this.schema) 
+                    obj.populate = (propertyName: string) => 
+                        this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), obj)
+                });
+                this.result.populate = (propertyName: string) => {
+                    return this.populateMultipleObjects(propertyName, this.result["@graph"], StringGenerator.getProperty(this.schema.properties[propertyName]))
+                }
             } else {
                 // if there was a single object returned, manually adds the @graph property as an array and add the object to this list
                 let ldResource = Object.assign({}, this.result);
-                ldResource.save = this.update;
+                ldResource.save = () => this.update(ldResource, this.schema);
+                ldResource.populate = (propertyName: string) => 
+                    this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), ldResource)
                 delete ldResource["@context"];
                 ldResource = {
                     "@context": this.result["@context"],
@@ -173,6 +186,7 @@ export class RDFResult {
         if (!this.updated) {
             const insertQuery = this.builder.buildInsert();
             await this.request.update(insertQuery);
+            console.log(insertQuery)
             return Promise.resolve(insertQuery);
         } else {
             return this.update(this.result, this.schema);
@@ -183,7 +197,7 @@ export class RDFResult {
      * Updates the tupels in the triplestore to contain the values of the result object.
      */
     private async update(ldResource: LDResource, schema: Schema): Promise<string> {
-        if (!this.result["@graph"]) {
+        // if (!this.result["@graph"]) {
             const values: PropertyValues = { identifier: ldResource["@id"]};
             Object.keys(ldResource).forEach(propName => {
                 if (schema.properties[propName]) {
@@ -193,9 +207,36 @@ export class RDFResult {
             const updateQuery = this.builder.buildUpdate(values);
             await this.request.update(updateQuery);
             return Promise.resolve(updateQuery);
+        // } else {
+        //     return Promise.resolve("Cannot update whole list");
+        // }
+    }
+
+    /**
+     * Populates the property of one single object
+     * @param propertyName 
+     * @param value 
+     * @param propDefinition 
+     */
+    private async populateLDResource(propertyName: string, propDefinition: Property, ldResource: LDResource): Promise<LDResource> {
+        const value = ldResource[propertyName];
+        if (Array.isArray(value)) {
+            const requests: Promise<LDResource>[] = [];
+            value.forEach((val: string) => {
+                this.pushRequest(val, propDefinition, requests);
+            })
+            const populatedResult = await Promise.all(requests);
+            ldResource[propertyName] = populatedResult;
+
+            return Promise.resolve(ldResource);
         } else {
-            return Promise.resolve("Cannot update whole list");
+            if (propDefinition.ref) {
+                let identifierSplit = value.split("/");
+                let identifier = identifierSplit[identifierSplit.length - 1];
+                ldResource[propertyName] = await propDefinition.ref.findByIdentifier(identifier);
+            }
         }
+        return Promise.resolve(ldResource);
     }
 
     /**
@@ -212,23 +253,23 @@ export class RDFResult {
         }
     }
 
-    /**
-     * Replaces the uri of the specified property with the object is inside the triplestore
-     * @param propertyName 
-     */
-    public async populate(propertyName: string): Promise<RDFResult> {
-        const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
-        if (!propDefinition) { throw Error(`Cannot populate property ${propertyName} as it does'nt exist on the defined type ${this.schema.resourceType}.`) }
-        if (propDefinition.type !== "uri") { throw Error(`Cannot populate property ${propertyName} as values of this property are defined to be literals.`) } 
+    // /**
+    //  * Replaces the uri of the specified property with the object is inside the triplestore
+    //  * @param propertyName 
+    //  */
+    // public async populate(propertyName: string): Promise<RDFResult> {
+    //     const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
+    //     if (!propDefinition) { throw Error(`Cannot populate property ${propertyName} as it does'nt exist on the defined type ${this.schema.resourceType}.`) }
+    //     if (propDefinition.type !== "uri") { throw Error(`Cannot populate property ${propertyName} as values of this property are defined to be literals.`) } 
 
-        if (this.result["@graph"]) {
-            return await this.populateMultipleObjects(propertyName, this.result["@graph"], propDefinition);
-        } else {
-            const value = this.result[propertyName];
-            if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
-            return await this.populateSingleObject(propertyName, value, propDefinition);
-        }
-    }
+    //     if (this.result["@graph"]) {
+    //         return await this.populateMultipleObjects(propertyName, this.result["@graph"], propDefinition);
+    //     } else {
+    //         const value = this.result[propertyName];
+    //         if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
+    //         return await this.populateSingleObject(propertyName, value, propDefinition);
+    //     }
+    // }
 
     /**
      * Checks if the given property is an array and then executes a function based on if it is one or not. Used to populate an array of uri's or a single uri
@@ -248,12 +289,12 @@ export class RDFResult {
         }
     }
 
-    private async pushRequest(value: string, propDefinition: Property, requests: Promise<RDFResult>[]) {
+    private async pushRequest(value: string, propDefinition: Property, requests: Promise<LDResource>[]) {
         if (propDefinition.ref) {
             let identifierSplit = value.split("/");
             let identifier = identifierSplit[identifierSplit.length - 1];
             // !TODO FIX!!!
-            // requests.push(propDefinition.ref.findByIdentifier(identifier));
+            requests.push(propDefinition.ref.findByIdentifier(identifier));
         }
     }
 
@@ -263,8 +304,8 @@ export class RDFResult {
      * @param objects 
      * @param propDefinition 
      */
-    private async populateMultipleObjects(propertyName: string, objects: JsonLDResource[], propDefinition: Property): Promise<RDFResult> {
-        const requests: Promise<RDFResult>[] = [];
+    private async populateMultipleObjects(propertyName: string, objects: LDResource[], propDefinition: Property): Promise<LDResource[]> {
+        const requests: Promise<LDResource>[] = [];
         objects.forEach(obj => {
             const prop = obj[propertyName];
             this.callFunctionOnProperty(prop, propertyName, (propArray: string[]) => {
@@ -279,57 +320,59 @@ export class RDFResult {
 
         objects.forEach(obj => {
             const prop = obj[propertyName];
-            this.callFunctionOnProperty(prop, propertyName, (propArray: string[]) => {
+            this.callFunctionOnProperty(prop, propertyName, (propArray: any[]) => {
                 propArray.forEach((value: any, index: number) => {
-                    const populateWith = populateResult.find((res: RDFResult) => {
-                        if (res.result["@id"]) {
-                            return res.result["@id"] === value
+                    const populateWith = populateResult.find((res: LDResource) => {
+                        if (res["@id"]) {
+                            return res["@id"] === value
                         }
                     })
                     if (populateWith) {
-                        propArray[index] = populateWith.result;
+                        propArray[index] = populateWith;
                     }
                 })
             }, (propString: string) => {
                 const value = propString;
-                const populateWith = populateResult.find((res: RDFResult) => {
-                    if (res.result["@id"]) {
-                        return res.result["@id"] === value
+                const populateWith = populateResult.find((res: LDResource) => {
+                    if (res["@id"]) {
+                        return res["@id"] === value
                     }
                 })
                 if (populateWith) {
-                    obj[propertyName] = populateWith.result;
+                    obj[propertyName] = populateWith;
                 }
             });
         });
-        return Promise.resolve(this);
+        return Promise.resolve(objects);
     }
+    
 
-    /**
-     * Populates the property of one single object
-     * @param propertyName 
-     * @param value 
-     * @param propDefinition 
-     */
-    private async populateSingleObject(propertyName: string, value: any, propDefinition: Property): Promise<RDFResult> {
-        if (Array.isArray(value)) {
-            const requests: Promise<RDFResult>[] = [];
-            value.forEach((val: string) => {
-                this.pushRequest(val, propDefinition, requests);
-            })
-            const populatedResult = await Promise.all(requests);
-            this.result[propertyName] = populatedResult.map(populatedResult => populatedResult.result);
 
-            return this;
-        } else {
-            if (propDefinition.ref) {
-                let identifierSplit = value.split("/");
-                let identifier = identifierSplit[identifierSplit.length - 1];
-                this.result[propertyName] = (await propDefinition.ref.findByIdentifier(identifier)).result;
-                return this;
-            }
-        }
-        return this;
-    }
+    // /**
+    //  * Populates the property of one single object
+    //  * @param propertyName 
+    //  * @param value 
+    //  * @param propDefinition 
+    //  */
+    // private async populateSingleObject(propertyName: string, value: any, propDefinition: Property): Promise<RDFResult> {
+    //     if (Array.isArray(value)) {
+    //         const requests: Promise<RDFResult>[] = [];
+    //         value.forEach((val: string) => {
+    //             this.pushRequest(val, propDefinition, requests);
+    //         })
+    //         const populatedResult = await Promise.all(requests);
+    //         this.result[propertyName] = populatedResult.map(populatedResult => populatedResult.result);
+
+    //         return this;
+    //     } else {
+    //         if (propDefinition.ref) {
+    //             let identifierSplit = value.split("/");
+    //             let identifier = identifierSplit[identifierSplit.length - 1];
+    //             this.result[propertyName] = (await propDefinition.ref.findByIdentifier(identifier)).result;
+    //             return this;
+    //         }
+    //     }
+    //     return this;
+    // }
 
 }

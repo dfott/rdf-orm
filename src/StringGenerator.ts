@@ -87,7 +87,8 @@ export class StringGenerator {
 
     private static pushValueToStatements(statementList: string[], uri: string, property: Property, propertyName: string, value: any) {
         if (property.type === "uri" && property.ref) {
-            const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
+            // const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
+            const rdfObject = value;
             statementList.push(`<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`);
         } else {
             if (property.type !== "integer") {
