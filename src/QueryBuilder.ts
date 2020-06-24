@@ -136,5 +136,14 @@ export class QueryBuilder {
             .concat(`\n}`);
     }
 
+    /**
+     * Takes a query and adds a limit statement to only return an x amount of objects
+     * @param limit 
+     * @param query 
+     */
+    public static limit(limit: number, query: string) {
+        return `${query} LIMIT ${limit}`;
+    }
+
 
 }

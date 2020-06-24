@@ -51,6 +51,7 @@ export interface IRDFModel {
     create(values: PropertyValues): RDFResult
     find(findParameters?: FindParameters): Promise<LDResourceList>
     findByIdentifier(identifier: string): Promise<LDResource>
+    findOne(findParameters?: FindParameters): Promise<LDResource>
     delete(findParameters?: FindParameters): Promise<boolean>
     deleteByIdentifier(identifier: string): Promise<boolean>
 }
@@ -93,6 +94,22 @@ export class RDF {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 // console.log(selectQuery)
                 const result = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
+                const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
+                const res = await rdfResult.convertToSingleLD(LdConverter.buildContext(schema.properties, schema.prefixes))
+                return Promise.resolve(
+                    res
+                );
+            }
+
+            /**
+             * Finds exactly one resource and its properties, if specified based on the findparameters
+             * @param findParameters 
+             */
+            async findOne(findParameters?: FindParameters): Promise<LDResource> {
+                let selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
+                    QueryBuilder.buildFind(schema);
+                selectQuery = QueryBuilder.limit(1, selectQuery);
+                const result = await request.query(selectQuery, { "Accept": "application/n-quads"});
                 const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
                 const res = await rdfResult.convertToSingleLD(LdConverter.buildContext(schema.properties, schema.prefixes))
                 return Promise.resolve(

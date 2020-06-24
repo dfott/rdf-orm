@@ -27,14 +27,15 @@ const Comment = RDF.createModel(blogData.CommentSchema, req);
 (async function() {
 
 
-    const blogs = await Blog.find();
+    // const blogs = await Blog.find();
 
-    await blogs.populate("comment")
+    // await blogs.populate("comment")
 
-    const [ blog1, blog2 ] = blogs["@graph"];
+    // const [ blog1, blog2 ] = blogs["@graph"];
 
-    console.log(blog1)
-    console.log(blog2)
+    console.log(
+        await Person.findOne({ age: 42 })
+    );
 
     // blog1.title = "Zweiter veränderter title....";
 
