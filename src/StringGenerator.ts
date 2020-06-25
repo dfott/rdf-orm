@@ -1,4 +1,5 @@
-import { PrefixList, PropertyList, PropertyValues, FindParameters, Schema, Property } from "./RDF";
+import { FindParameters } from "./RDF";
+import { PrefixList, PropertyList, Property, PropertyValues, Schema } from "./models/RDFModel";
 
 export class StringGenerator {
 

@@ -1,59 +1,11 @@
-import { RDFResult, LDResource, LDResourceList } from "./RDFResult"
+import { RDFResult } from "./RDFResult"
 import { QueryBuilder } from "./QueryBuilder"
 import { RDFRequest } from "./RDFRequest"
-import { LdConverter } from "./LdConverter";
-export interface PrefixList {
-    [prefix: string]: string,
-}
-
-export interface Property {
-    prefix: string;
-    optional?: boolean;
-    type?: "uri" | "integer";
-    ref?: IRDFModel;
-    isKey?: boolean;
-}
-
-export interface PropertyList {
-    [propertyName: string]: Property | [Property];
-}
-
-export interface PropertyValues {
-    identifier: string;
-    [propertyName: string]: any;
-}
-
-export interface Schema {
-    resourceType: string;
-    resourceSchema: string;
-    prefixes: PrefixList;
-    properties: PropertyList;
-}
+import { Schema, IRDFModel, PropertyValues } from "./models/RDFModel";
+import { LDResourceList, LDResource } from "./models/JsonLD";
 
 export interface FindParameters {
     [propertyName: string]: string | number;
-}
-
-export interface RawModel {
-    [propertyName: string] : {
-        type: string;
-        value: string;
-    }
-}
-
-export interface ObjectValues {
-    [propertyName: string]: string;
-}
-
-
-export interface IRDFModel {
-    schema?: Schema;
-    create(values: PropertyValues): RDFResult
-    find(findParameters?: FindParameters): Promise<LDResourceList>
-    findByIdentifier(identifier: string): Promise<LDResource>
-    findOne(findParameters?: FindParameters): Promise<LDResource>
-    delete(findParameters?: FindParameters): Promise<boolean>
-    deleteByIdentifier(identifier: string): Promise<boolean>
 }
 
 /**
@@ -78,9 +30,9 @@ export class RDF {
             async find(findParameters?: FindParameters): Promise<LDResourceList> {
                 const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
-                const result = await request.query(selectQuery, { "Accept": "application/n-quads" });
-                const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
-                const res = await rdfResult.convertToLDList(LdConverter.buildContext(schema.properties, schema.prefixes))
+                const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" });
+                const rdfResult = new RDFResult(request, schema, nquads, true);
+                const res = await rdfResult.toLDResourceList(schema.properties, schema.prefixes)
                 return Promise.resolve(
                     res
                 );
@@ -93,9 +45,9 @@ export class RDF {
             async findByIdentifier(identifier: string): Promise<LDResource> {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 // console.log(selectQuery)
-                const result = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
-                const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
-                const res = await rdfResult.convertToSingleLD(LdConverter.buildContext(schema.properties, schema.prefixes))
+                const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
+                const rdfResult = new RDFResult(request, schema, nquads, true);
+                const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
                 return Promise.resolve(
                     res
                 );
@@ -109,9 +61,9 @@ export class RDF {
                 let selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
                 selectQuery = QueryBuilder.limit(1, selectQuery);
-                const result = await request.query(selectQuery, { "Accept": "application/n-quads"});
-                const rdfResult = new RDFResult(request, schema, {} as PropertyValues, selectQuery, result)
-                const res = await rdfResult.convertToSingleLD(LdConverter.buildContext(schema.properties, schema.prefixes))
+                const nquads = await request.query(selectQuery, { "Accept": "application/n-quads"});
+                const rdfResult = new RDFResult(request, schema, nquads, true);
+                const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
                 return Promise.resolve(
                     res
                 );
@@ -121,8 +73,11 @@ export class RDF {
              * Createas a RDFResult Object, which can then be used to for example save the given values in a triplestore.
              * @param values - values for every property, specified in the model schema
              */
-            create(values: PropertyValues): RDFResult {
-                return new RDFResult(request, schema, values);
+            async create(values: PropertyValues): Promise<LDResource> {
+                const rdfResult =  new RDFResult(request, schema, {}, false);
+                const ld = await rdfResult.generateInitialLDResource(values);
+
+                return Promise.resolve(ld);
             }
 
             /**

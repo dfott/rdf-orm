@@ -1,40 +1,11 @@
-import { Schema, PropertyValues, PropertyList, Property } from "./RDF";
+import { Schema, PropertyValues, Property, PropertyList, PrefixList } from "./models/RDFModel";
 import { QueryBuilder } from "./QueryBuilder";
 import { RDFRequest } from "./RDFRequest";
-import { defaultJsonLd, LdConverter } from "./LdConverter";
 import { StringGenerator } from "./StringGenerator";
 
 import * as jsonld from "jsonld";
-import { JsonLdObj } from "jsonld/jsonld-spec";
+import { Context, LDResource, LDResourceList, JsonLD } from "./models/JsonLD";
 
-export interface JsonLD {
-    "@graph"?: JsonLDResource[]
-    "@id"?: string;
-    "@type"?: string;
-    [propname: string]: any
-    "@context"?: Context
-}
-
-export interface JsonLDResource {
-    "@id": string;
-    "@type": string;
-    [propname: string]: string | string[];
-}
-
-export interface LDResource {
-    "@id": string,
-    "@type": string,
-    "@context": Context,
-    [propName: string]: any,
-    save: () => Promise<string>,
-    populate: (propertyName: string) => Promise<LDResource>,
-}
-
-export interface LDResourceList {
-    "@graph": Array<LDResource>;
-    "@context": Context;
-    populate: (propertyName: string) => Promise<LDResourceList[]>;
-}
 
 export interface RawJsonLDResource {
     "@id": string;
@@ -44,26 +15,11 @@ export interface RawJsonLDResource {
 
 export interface RawLDValue { "@type": string, "@value": string}
 
-export interface Context {
-    [propName: string]: ContextObject
-}
-
-export interface ContextObject {
-    "@id": string;
-    "@type"?: string;
-}
-
-export interface UriMap {
-    [uri: string]: [string]
-}
 
 /**
  * Every CRUD operation called on a model will return an object of type RDFResult. It contains the SparQL Query and the JSON-LD result.
  */
 export class RDFResult {
-
-    private builder: QueryBuilder;
-    private updated = false;
 
     /**
      * The constructor updates the result to create an object, that is valid JSON-LD and is still intuitive to work with as a developer 
@@ -71,75 +27,91 @@ export class RDFResult {
      * @param schema - schema that provides the necessary information about the model
      * @param values - properties and their values for this resource. used if a new resource is created
      * @param query - sparql query used to create the result of this object
-     * @param result - result of the query, usually in Json-LD
+     * @param nquads - resulting nquads 
      */
-    constructor(private request: RDFRequest, private schema: Schema, public values: PropertyValues, public query?: string, public result?: any) {
-        this.builder = new QueryBuilder(this.schema, this.values);
-        if (result) { 
-            this.updated = true;
-        } 
+    constructor(private request: RDFRequest, private schema: Schema, public nquads: object, public updated: boolean) {
     }
 
-    public async convertToLD(context: Context) {
-        if (this.result) {
-            const ld = await jsonld.fromRDF(this.result)
-            const fullLd = await jsonld.compact(ld, context);
-            this.result = fullLd;
-            this.convertLDValues(this.result);
-        }
+    /**
+     * Generates an initial LDResource object, that can be used to save a resource with the given values in a triplestore
+     * @param values 
+     */
+    public async generateInitialLDResource(values: PropertyValues): Promise<LDResource> {
+        const context = this.buildContext(this.schema.properties, this.schema.prefixes);
+        const identifier = values.identifier
+        delete values.identifier;
+        const basicLD = {
+            "@context": context,
+            "@id": `${this.schema.resourceSchema}${this.schema.resourceType}/${identifier}`,
+            "@type": `${this.schema.resourceSchema}${this.schema.resourceType}`,
+            ...values
+        };
+        const nquads = await jsonld.toRDF(basicLD);
+        const converted = await jsonld.fromRDF(nquads);
+        const finalLd = await jsonld.compact(converted, context) as LDResource;
+        finalLd.save = () => this.save(finalLd, this.schema) 
+        return Promise.resolve(finalLd);
     }
 
-    public async convertToSingleLD(context: Context): Promise<LDResource> {
-        if (this.result) {
-            const ld = await jsonld.fromRDF(this.result)
-            const fullLd = await jsonld.compact(ld, context);
-            this.result = fullLd;
-            this.convertLDValues(this.result);
-            const ldResource: LDResource = { ...this.result };
-            ldResource.save = () => this.update(ldResource, this.schema); 
-            ldResource.populate = (propertyName: string) => 
-                this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), ldResource)
-            return Promise.resolve(ldResource);
-        } else {
-            return Promise.resolve(this.result);
-        }
+    /**
+     * Converts the nquads to a JsonLD object, that contains a single resource
+     * @param context - context object of the jsonld object
+     */
+    public async toLDResource(properties: PropertyList, prefixes: PrefixList): Promise<LDResource> {
+        const context = this.buildContext(properties, prefixes)
+        const rawLd = await jsonld.fromRDF(this.nquads)
+        const ldResource = await jsonld.compact(rawLd, context) as LDResource;
+        this.convertLDValues(ldResource);
+        ldResource.save = () => this.update(ldResource, this.schema); 
+        ldResource.populate = (propertyName: string) => 
+            this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), ldResource)
+        return Promise.resolve(ldResource);
     }
 
-    public async convertToLDList(context: Context): Promise<LDResourceList> {
-        if (this.result) {
-            const ld = await jsonld.fromRDF(this.result)
-            const fullLd = await jsonld.compact(ld, context);
-            this.result = fullLd;
-            this.convertLDValues(this.result);
-            if (this.result["@graph"]) {
-                this.result["@graph"].forEach((obj: LDResource) => { 
-                    obj.save = () => this.update(obj, this.schema) 
-                    obj.populate = (propertyName: string) => 
-                        this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), obj)
+    /**
+     * Converts the nquads to a JsonLD object, that contains multiple resources in the @graph property
+     * @param context - context object of the jsonld object
+     */
+    public async toLDResourceList(properties: PropertyList, prefixes: PrefixList): Promise<LDResourceList> {
+        const context = this.buildContext(properties, prefixes)
+        if (this.nquads) {
+            const rawLd = await jsonld.fromRDF(this.nquads)
+            const fullLd = await jsonld.compact(rawLd, context) as any;
+            this.convertLDValues(fullLd);
+            if (fullLd["@graph"]) {
+                fullLd["@graph"].forEach((ldResource: LDResource) => { 
+                    ldResource.save = () => this.update(ldResource, this.schema) 
+                    ldResource.populate = (propertyName: string) => 
+                        this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), ldResource)
                 });
-                this.result.populate = (propertyName: string) => {
-                    return this.populateMultipleObjects(propertyName, this.result["@graph"], StringGenerator.getProperty(this.schema.properties[propertyName]))
+                fullLd.populate = (propertyName: string) => {
+                    return this.populateMultipleObjects(propertyName, fullLd, StringGenerator.getProperty(this.schema.properties[propertyName]))
                 }
+                return Promise.resolve(fullLd);
             } else {
                 // if there was a single object returned, manually adds the @graph property as an array and add the object to this list
-                let ldResource = Object.assign({}, this.result);
+                let ldResource = Object.assign({}, fullLd);
                 ldResource.save = () => this.update(ldResource, this.schema);
                 ldResource.populate = (propertyName: string) => 
                     this.populateLDResource(propertyName, StringGenerator.getProperty(this.schema.properties[propertyName]), ldResource)
                 delete ldResource["@context"];
-                ldResource = {
-                    "@context": this.result["@context"],
-                    "@graph": [{ ...ldResource }]
+                let ldResourceList = {
+                    "@context": fullLd["@context"],
+                    "@graph": [ldResource]
+                } as LDResourceList;
+                ldResourceList.populate = (propertyName: string) => {
+                    return this.populateMultipleObjects(propertyName, ldResourceList, StringGenerator.getProperty(this.schema.properties[propertyName]))
                 }
-                this.result = ldResource;
+                return Promise.resolve(ldResourceList);
             }
         } else {
-            this.result = {
-                "@context": context,
-                "@graph": [],
-            };
+            const res = {
+                "@graph": [] as LDResource[],
+                "@context": context
+            } as LDResourceList;
+            res.populate = (propName: string) => Promise.resolve(res);
+            return Promise.resolve(res);
         }
-        return Promise.resolve(this.result)
     }
 
     /**
@@ -148,20 +120,44 @@ export class RDFResult {
      * @param jsonld 
      */
     public async convertLDValues(jsonld: JsonLD) {
-        this.applyToObjects(jsonld, (obj: RawJsonLDResource) => {
-            Object.keys(obj).forEach(propName => {
+        this.applyToObjects(jsonld, (ldResource: RawJsonLDResource) => {
+            Object.keys(ldResource).forEach(propName => {
                 const propDefinition = this.schema.properties[propName]
-                const prop = obj[propName];
+                const prop = ldResource[propName];
                 if (typeof prop !== "string" && !Array.isArray(prop)) {
                     if (prop["@value"]) {
-                        obj[propName] = this.valueToArray(prop["@value"], propDefinition);
+                        ldResource[propName] = this.valueToArray(prop["@value"], propDefinition);
                     }
                 } else {
-                    obj[propName] = this.valueToArray(prop, propDefinition);
+                    ldResource[propName] = this.valueToArray(prop, propDefinition);
                 }
             })
         })
     }
+
+    /**
+     * Creates a context object used to compact a jsonld result.
+     * @param propertyList 
+     * @param prefixes 
+     */
+    public buildContext(propertyList: PropertyList, prefixes: PrefixList): Context {
+        const context: Context = {};
+        Object.keys(propertyList).forEach(propName => {
+            const propDefinition = StringGenerator.getProperty(propertyList[propName]);
+            const schema = `${prefixes[propDefinition.prefix]}${propName}`;
+            if (propDefinition.type) {
+                if (propDefinition.type === "integer") {
+                    context[propName] = { "@id": schema, "@type": "http://www.w3.org/2001/XMLSchema#integer" };
+                } else if (propDefinition.type === "uri") {
+                    context[propName] = { "@id": schema, "@type": "@id" };
+                }
+            } else {
+                context[propName] = { "@id": schema };
+            }
+        })
+        return context;
+    }
+
 
 
     /**
@@ -178,38 +174,35 @@ export class RDFResult {
         return value;
     }
 
-    /**
-     * Used to save the object in a triplestore. If the RDFResult was newly created, the specified values are safed in the triplestore.
-     * If not, the values are updated.
-     */
-    public async save(): Promise<string> {
-        if (!this.updated) {
-            const insertQuery = this.builder.buildInsert();
-            await this.request.update(insertQuery);
-            console.log(insertQuery)
-            return Promise.resolve(insertQuery);
-        } else {
-            return this.update(this.result, this.schema);
-        }
+    private extractValuesFromLD(values: PropertyValues, ldResource: LDResource, properties: PropertyList) {
+        Object.keys(ldResource).forEach(propName => {
+            if (properties[propName]) {
+                values[propName] = ldResource[propName];
+            }
+        })
     }
 
     /**
-     * Updates the tupels in the triplestore to contain the values of the result object.
+     * This function is added to newly created LDResources. It is used to save the resource in a triplestore. 
+     */
+    public async save(ldResource: LDResource, schema: Schema): Promise<string> {
+        const values: PropertyValues = { identifier: ldResource["@id"] };
+        this.extractValuesFromLD(values, ldResource, schema.properties);
+        const insertQuery = QueryBuilder.buildInsert(values, schema);
+        await this.request.update(insertQuery);
+        ldResource.save = () => this.update(ldResource, schema);
+        return Promise.resolve(insertQuery);
+    }
+
+    /**
+     * Updates the tupels in the triplestore to contain the values of the ldResource object.
      */
     private async update(ldResource: LDResource, schema: Schema): Promise<string> {
-        // if (!this.result["@graph"]) {
-            const values: PropertyValues = { identifier: ldResource["@id"]};
-            Object.keys(ldResource).forEach(propName => {
-                if (schema.properties[propName]) {
-                    values[propName] = ldResource[propName];
-                }
-            })
-            const updateQuery = this.builder.buildUpdate(values);
-            await this.request.update(updateQuery);
-            return Promise.resolve(updateQuery);
-        // } else {
-        //     return Promise.resolve("Cannot update whole list");
-        // }
+        const values: PropertyValues = { identifier: ldResource["@id"]};
+        this.extractValuesFromLD(values, ldResource, schema.properties);
+        const updateQuery = QueryBuilder.buildUpdate(values, schema);
+        await this.request.update(updateQuery);
+        return Promise.resolve(updateQuery);
     }
 
     /**
@@ -304,7 +297,8 @@ export class RDFResult {
      * @param objects 
      * @param propDefinition 
      */
-    private async populateMultipleObjects(propertyName: string, objects: LDResource[], propDefinition: Property): Promise<LDResource[]> {
+    private async populateMultipleObjects(propertyName: string, ldResourceList: LDResourceList, propDefinition: Property): Promise<LDResourceList> {
+        const objects = ldResourceList["@graph"];
         const requests: Promise<LDResource>[] = [];
         objects.forEach(obj => {
             const prop = obj[propertyName];
@@ -343,7 +337,7 @@ export class RDFResult {
                 }
             });
         });
-        return Promise.resolve(objects);
+        return Promise.resolve(ldResourceList);
     }
     
 

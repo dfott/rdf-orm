@@ -1,5 +1,6 @@
-import { PropertyValues, Schema, FindParameters } from "./RDF";
 import { StringGenerator } from "./StringGenerator";
+import { PropertyValues, Schema, Property } from "./models/RDFModel";
+import { FindParameters } from "./RDF";
 
 export class QueryBuilder {
 
@@ -8,11 +9,11 @@ export class QueryBuilder {
     /**
      * Builds an insert query.
      */
-    public buildInsert(): string {
-        return `${StringGenerator.prefixString(this.schema.prefixes)}\n\n`
+    public static buildInsert(values: PropertyValues, schema: Schema): string {
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`INSERT DATA {\n`) 
-            .concat(StringGenerator.insertString(this.schema.properties, this.values, this.schema.resourceSchema,
-                    this.schema.resourceType))
+            .concat(StringGenerator.insertString(schema.properties, values, schema.resourceSchema,
+                    schema.resourceType))
             .concat(`\n}`)
     }
 
@@ -20,19 +21,19 @@ export class QueryBuilder {
      * Builds an update query, which deletes and then reinserts every tupel used to describe the resource
      * @param values - values for every property of the model
      */
-    public buildUpdate(values: PropertyValues) {
-        const constructGraphPattern = StringGenerator.constructString(this.schema.properties, this.schema.resourceType);
-        const whereGraphPattern = StringGenerator.whereString(this.schema.properties, this.schema.resourceType);
-        return `${StringGenerator.prefixString(this.schema.prefixes)}\n\n`
+    public static buildUpdate(values: PropertyValues, schema: Schema) {
+        const constructGraphPattern = StringGenerator.constructString(schema.properties, schema.resourceType);
+        const whereGraphPattern = StringGenerator.whereString(schema.properties, schema.resourceType);
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`delete {\n`)
             .concat(`${constructGraphPattern}`)
             .concat(`\n}\n`)
             .concat(`insert {\n`)
-            .concat(StringGenerator.insertString(this.schema.properties, values, this.schema.resourceSchema, this.schema.resourceType))
+            .concat(StringGenerator.insertString(schema.properties, values, schema.resourceSchema, schema.resourceType))
             .concat(`\n}\n`)
             .concat(`where {\n`) 
             .concat(whereGraphPattern + "\n")
-            .concat(StringGenerator.identifier(this.schema, values.identifier))
+            .concat(StringGenerator.identifier(schema, values.identifier))
             .concat(`\n}`)
     }
 

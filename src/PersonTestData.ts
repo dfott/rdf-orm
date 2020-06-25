@@ -1,5 +1,6 @@
-import { PrefixList, PropertyList, PropertyValues, Schema, FindParameters } from "./RDF";
+import {  FindParameters } from "./RDF";
 import { RDFRequest } from "./RDFRequest";
+import { PrefixList, PropertyList, PropertyValues, Schema } from "./models/RDFModel";
 
 const prefixList = {
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
