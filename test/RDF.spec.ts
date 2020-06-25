@@ -1,23 +1,21 @@
-import { assert, AssertionError } from "chai";
+import { assert } from "chai";
 import data from "../src/PersonTestData";
 import { RDF } from "../src/RDF";
-import { PropertyValues } from "../src/RDF";
-import { LdConverter } from "../src/LdConverter";
 
 const Person = RDF.createModel(data.personSchema, data.request);
 
 describe("RDF", function() {
     before(async function() {
-        await (Person.create(data.danielValues)).save();
-        await (Person.create(data.peterValues)).save();
-        await (Person.create(data.guterValues)).save();
+        await (await Person.create(data.danielValues)).save();
+        await (await Person.create(data.peterValues)).save();
+        await (await Person.create(data.guterValues)).save();
     })
     after(async function() {
         await Person.delete();
     })
     it("should create tupels based on the given input values and schema and return the query", async function() {
         const userValues = { identifier: "CreateTupels", firstname: "Create", lastname: "Tupels", age: 20 };
-        const user = Person.create(userValues);
+        const user = await Person.create(userValues);
         await user.save();
 
         const foundDaniel = await Person.find({ firstname: userValues.firstname, lastname: userValues.lastname, age: userValues.age });
@@ -50,9 +48,9 @@ describe("RDF", function() {
 
     })
     it("should delete resources and their properties, based on the given filters", async function() {
-        const testo = Person.create({ identifier: "TestoMesto", firstname: "Testo", lastname: "Mesto", age: 25});
+        const testo = await Person.create({ identifier: "TestoMesto", firstname: "Testo", lastname: "Mesto", age: 25});
         await testo.save()
-        const lesto = Person.create({ identifier: "LestoMesto", firstname: "Lesto", lastname: "Mesto", age: 25});
+        const lesto = await Person.create({ identifier: "LestoMesto", firstname: "Lesto", lastname: "Mesto", age: 25});
         await lesto.save()
 
         const found = await Person.find({ age: 25});
@@ -77,7 +75,7 @@ describe("RDF", function() {
         assert.isEmpty(newestResult["@graph"]);
     })
     it("should delete resources and their properties, based on the given identifier", async function() {
-        const testo = Person.create({ identifier: "TestoMesto", firstname: "Testo", lastname: "Mesto", age: 25});
+        const testo = await Person.create({ identifier: "TestoMesto", firstname: "Testo", lastname: "Mesto", age: 25});
         await testo.save()
 
         let foundTesto = await Person.findByIdentifier("TestoMesto");

@@ -9,8 +9,8 @@ const prefixes = {
     "schema": "http://schema.org/",
 }
 
-// const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
-const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
+const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
+// const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 
 const CommentSchema: Schema = {
     prefixes: prefixes,
@@ -42,13 +42,13 @@ const Blog = RDF.createModel(BlogSchema, req);
 const exampleBlog1: PropertyValues = {
     identifier: "blog1",
     title: "Mein erster Blog",
-    comment: ["comment1"],
+    comment: ["http://schema.org/Comment/comment1"],
 }
 
 const exampleBlog2: PropertyValues = {
     identifier: "blog2",
     title: "Mein zweiter Blog",
-    comment: ["comment1", "comment2"],
+    comment: ["http://schema.org/Comment/comment1", "http://schema.org/Comment/comment2"],
 }
 
 const exampleComment1: PropertyValues = {

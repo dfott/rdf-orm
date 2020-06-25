@@ -1,6 +1,5 @@
 import { assert } from "chai";
 import { StringGenerator } from "../src/StringGenerator";
-import { PrefixList, PropertyList, PropertyValues, Property } from "../src/RDF";
 import data from "../src/PersonTestData";
 import blogData from "../src/BlogTestData";
 
@@ -67,7 +66,7 @@ PREFIX schema: <http://schema.org/>`;
 
         const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
             .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
-            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment[0]}> .`);
+            .concat(`<${uri}> schema:comment <${blogValues.comment[0]}> .`);
 
         assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
             expectedInsertString);
@@ -82,8 +81,8 @@ PREFIX schema: <http://schema.org/>`;
         const uri = `${blog.resourceSchema}${blog.resourceType}/${blogValues.identifier}`;
         const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
             .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
-            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment[0]}> .\n`)
-            .concat(`<${uri}> schema:comment <${comment.resourceSchema}${comment.resourceType}/${blogValues.comment[1]}> .`);
+            .concat(`<${uri}> schema:comment <${blogValues.comment[0]}> .\n`)
+            .concat(`<${uri}> schema:comment <${blogValues.comment[1]}> .`);
 
         assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
             expectedInsertString);

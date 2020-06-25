@@ -58,7 +58,6 @@ export class StringGenerator {
      * @param resourceType - Type of the modelled resource
      */
     public static insertString(properties: PropertyList, values: PropertyValues, resourceSchema: string, resourceType: string) : string {
-
         // !TODO find a new method to get the full identifier
         values.identifier = values.identifier.replace(resourceSchema, "").replace(`${resourceType}/`, "");
         let uri = `${resourceSchema}${resourceType}/${values.identifier}`;
@@ -72,7 +71,9 @@ export class StringGenerator {
                 if(!Array.isArray(properties[propertyName])) {
                     this.pushValueToStatements(statementList, uri, property, propertyName, values[propertyName]);
                 } else {
-                    if (!Array.isArray(values[propertyName])) { throw Error(`Property ${propertyName} was specified to be an array.`) }
+                    if (!Array.isArray(values[propertyName])) { 
+                        throw Error(`Property ${propertyName} was specified to be an array.`)
+                     }
                     (values[propertyName] as any[]).forEach(value => {
                         this.pushValueToStatements(statementList, uri, property, propertyName, value);
                     })

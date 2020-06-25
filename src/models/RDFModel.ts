@@ -1,4 +1,4 @@
-import { RDFResult } from "../RDFResult";
+import { LdConverter } from "../LdConverter";
 import { FindParameters } from "../RDF";
 import { LDResourceList, LDResource } from "./JsonLD";
 

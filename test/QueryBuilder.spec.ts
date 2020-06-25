@@ -7,8 +7,6 @@ import { StringGenerator } from "../src/StringGenerator";
 
 describe("QueryBuilder", function() {
     it("should build an insert query, that could be used in a SparQL query to insert tupels, based on the given schema and values", function() {
-        const builder = new QueryBuilder(data.personSchema, data.danielValues);
-
         const expectedInsertString = 
 `${StringGenerator.prefixString(data.prefixList)}
 
@@ -16,7 +14,7 @@ INSERT DATA {
 ${StringGenerator.insertString(data.propertyList, data.danielValues, data.resourceSchema, data.resourceType)}
 }`;
 
-    assert.equal(builder.buildInsert(), expectedInsertString);
+        assert.equal(QueryBuilder.buildInsert(data.danielValues, data.personSchema), expectedInsertString);
     })
 
     it("should build a construct query, that would select every tuple that is modelling the specified schema", function() {
