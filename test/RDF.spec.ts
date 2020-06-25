@@ -121,6 +121,9 @@ describe("RDF", function() {
         assert.isArray(results["@graph"]);
         assert.lengthOf(results["@graph"], 2);
     })
+    it("should find exactly one resource", async function() {
+
+    })
     it("should delete every tuple in the triplestore, that represents the created model schema", async function() {
         await Person.delete();
 

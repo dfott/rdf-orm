@@ -31,7 +31,7 @@ export class RDF {
                 const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
                 const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" });
-                const rdfResult = new LdConverter(request, schema, nquads, true);
+                const rdfResult = new LdConverter(request, schema, nquads);
                 const res = await rdfResult.toLDResourceList(schema.properties, schema.prefixes)
                 return Promise.resolve(
                     res
@@ -46,7 +46,7 @@ export class RDF {
                 const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 // console.log(selectQuery)
                 const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
-                const rdfResult = new LdConverter(request, schema, nquads, true);
+                const rdfResult = new LdConverter(request, schema, nquads);
                 const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
                 return Promise.resolve(
                     res
@@ -62,7 +62,7 @@ export class RDF {
                     QueryBuilder.buildFind(schema);
                 selectQuery = QueryBuilder.limit(1, selectQuery);
                 const nquads = await request.query(selectQuery, { "Accept": "application/n-quads"});
-                const rdfResult = new LdConverter(request, schema, nquads, true);
+                const rdfResult = new LdConverter(request, schema, nquads);
                 const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
                 return Promise.resolve(
                     res
@@ -74,7 +74,7 @@ export class RDF {
              * @param values - values for every property, specified in the model schema
              */
             async create(values: PropertyValues): Promise<LDResource> {
-                const rdfResult =  new LdConverter(request, schema, {}, false);
+                const rdfResult =  new LdConverter(request, schema, {});
                 const ld = await rdfResult.generateInitialLDResource(values);
 
                 return Promise.resolve(ld);

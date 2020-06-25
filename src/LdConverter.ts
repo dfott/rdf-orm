@@ -17,7 +17,7 @@ export interface RawLDValue { "@type": string, "@value": string}
 
 
 /**
- * Every CRUD operation called on a model will return an object of type RDFResult. It contains the SparQL Query and the JSON-LD result.
+ * Every CRUD operation called on a model will use this class to convert the resulting nquads into a LDResource or a LDResourceList. These objects represent the result in JsonLD format and can be used to update/save the resource
  */
 export class LdConverter {
 
@@ -25,11 +25,9 @@ export class LdConverter {
      * The constructor updates the result to create an object, that is valid JSON-LD and is still intuitive to work with as a developer 
      * @param request - the request object used to communicate with a triplestore
      * @param schema - schema that provides the necessary information about the model
-     * @param values - properties and their values for this resource. used if a new resource is created
-     * @param query - sparql query used to create the result of this object
      * @param nquads - resulting nquads 
      */
-    constructor(private request: RDFRequest, private schema: Schema, public nquads: object, public updated: boolean) {
+    constructor(private request: RDFRequest, private schema: Schema, public nquads: object) {
     }
 
     /**
