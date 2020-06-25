@@ -75,8 +75,6 @@ PREFIX schema: <http://schema.org/>`;
 
     it("should generate an insert string, which adds a new statement for every value in an array", function() {
         const blog = blogData.BlogSchema;
-        // blog.properties.comment = { prefix: "schema", optional: true, type: "uri", ref: Comment} as Property;
-        const comment = blogData.CommentSchema;
         const blogValues = blogData.exampleBlog2;
         const uri = `${blog.resourceSchema}${blog.resourceType}/${blogValues.identifier}`;
         const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`

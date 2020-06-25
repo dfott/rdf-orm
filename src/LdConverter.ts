@@ -159,30 +159,6 @@ export class LdConverter {
         return context;
     }
 
-
-
-    /**
-     * Converts the resulting property value to an array, if it was defined to be one in the schema
-     */
-    private valueToArray(value: string | string[], propDefinition: Property | Property[]): string | string[] {
-        if (propDefinition) {
-            if (Array.isArray(propDefinition)) {
-                if (!Array.isArray(value)) {
-                    return [value]
-                }
-            }
-        }
-        return value;
-    }
-
-    private extractValuesFromLD(values: PropertyValues, ldResource: LDResource, properties: PropertyList) {
-        Object.keys(ldResource).forEach(propName => {
-            if (properties[propName]) {
-                values[propName] = ldResource[propName];
-            }
-        })
-    }
-
     /**
      * This function is added to newly created LDResources. It is used to save the resource in a triplestore. 
      */
@@ -234,65 +210,6 @@ export class LdConverter {
     }
 
     /**
-     * Calls a given callback function for every JsonLDResource Object in the result. It is used because the JsonLD result of a construct query 
-     * returns the object directly in the resulting object or if there are multiple, they are saved in the @graph property.
-     * @param result 
-     * @param callback 
-     */
-    private applyToObjects(result: any, callback: (obj: any) => void) {
-        if (result["@graph"]) {
-            result["@graph"].forEach((obj: any) => callback(obj))
-        } else {
-            callback(result);
-        }
-    }
-
-    // /**
-    //  * Replaces the uri of the specified property with the object is inside the triplestore
-    //  * @param propertyName 
-    //  */
-    // public async populate(propertyName: string): Promise<RDFResult> {
-    //     const propDefinition = StringGenerator.getProperty(this.schema.properties[propertyName]);
-    //     if (!propDefinition) { throw Error(`Cannot populate property ${propertyName} as it does'nt exist on the defined type ${this.schema.resourceType}.`) }
-    //     if (propDefinition.type !== "uri") { throw Error(`Cannot populate property ${propertyName} as values of this property are defined to be literals.`) } 
-
-    //     if (this.result["@graph"]) {
-    //         return await this.populateMultipleObjects(propertyName, this.result["@graph"], propDefinition);
-    //     } else {
-    //         const value = this.result[propertyName];
-    //         if (!value) { throw Error("Cannot populate a field, that doesn't exist in the resulting object.") }
-    //         return await this.populateSingleObject(propertyName, value, propDefinition);
-    //     }
-    // }
-
-    /**
-     * Checks if the given property is an array and then executes a function based on if it is one or not. Used to populate an array of uri's or a single uri
-     * @param propValue 
-     * @param propertyName 
-     * @param isArray 
-     * @param isString 
-     */
-    private async callFunctionOnProperty(propValue: string | string[], propertyName: string, 
-            isArray: (propArray: string[]) => void, isString: (propString: string) => void) {
-        if (Array.isArray(propValue)) {
-            if (Array.isArray(this.schema.properties[propertyName])) {
-                isArray(propValue);
-            }
-        } else {
-            isString(propValue);
-        }
-    }
-
-    private async pushRequest(value: string, propDefinition: Property, requests: Promise<LDResource>[]) {
-        if (propDefinition.ref) {
-            let identifierSplit = value.split("/");
-            let identifier = identifierSplit[identifierSplit.length - 1];
-            // !TODO FIX!!!
-            requests.push(propDefinition.ref.findByIdentifier(identifier));
-        }
-    }
-
-    /**
      * Populates the field of multiple objects
      * @param propertyName 
      * @param objects 
@@ -340,34 +257,68 @@ export class LdConverter {
         });
         return Promise.resolve(ldResourceList);
     }
+
+    /**
+     * Calls a given callback function for every JsonLDResource Object in the result. It is used because the JsonLD result of a construct query 
+     * returns the object directly in the resulting object or if there are multiple, they are saved in the @graph property.
+     * @param result 
+     * @param callback 
+     */
+    private applyToObjects(result: any, callback: (obj: any) => void) {
+        if (result["@graph"]) {
+            result["@graph"].forEach((obj: any) => callback(obj))
+        } else {
+            callback(result);
+        }
+    }
+
+    private async pushRequest(value: string, propDefinition: Property, requests: Promise<LDResource>[]) {
+        if (propDefinition.ref) {
+            let identifierSplit = value.split("/");
+            let identifier = identifierSplit[identifierSplit.length - 1];
+            // !TODO FIX!!!
+            requests.push(propDefinition.ref.findByIdentifier(identifier));
+        }
+    }
+
+    /**
+     * Checks if the given property is an array and then executes a function based on if it is one or not. Used to populate an array of uri's or a single uri
+     * @param propValue 
+     * @param propertyName 
+     * @param isArray 
+     * @param isString 
+     */
+    private async callFunctionOnProperty(propValue: string | string[], propertyName: string, 
+            isArray: (propArray: string[]) => void, isString: (propString: string) => void) {
+        if (Array.isArray(propValue)) {
+            if (Array.isArray(this.schema.properties[propertyName])) {
+                isArray(propValue);
+            }
+        } else {
+            isString(propValue);
+        }
+    }
+
+    /**
+     * Converts the resulting property value to an array, if it was defined to be one in the schema
+     */
+    private valueToArray(value: string | string[], propDefinition: Property | Property[]): string | string[] {
+        if (propDefinition) {
+            if (Array.isArray(propDefinition)) {
+                if (!Array.isArray(value)) {
+                    return [value]
+                }
+            }
+        }
+        return value;
+    }
+
+    private extractValuesFromLD(values: PropertyValues, ldResource: LDResource, properties: PropertyList) {
+        Object.keys(ldResource).forEach(propName => {
+            if (properties[propName]) {
+                values[propName] = ldResource[propName];
+            }
+        })
+    }
     
-
-
-    // /**
-    //  * Populates the property of one single object
-    //  * @param propertyName 
-    //  * @param value 
-    //  * @param propDefinition 
-    //  */
-    // private async populateSingleObject(propertyName: string, value: any, propDefinition: Property): Promise<RDFResult> {
-    //     if (Array.isArray(value)) {
-    //         const requests: Promise<RDFResult>[] = [];
-    //         value.forEach((val: string) => {
-    //             this.pushRequest(val, propDefinition, requests);
-    //         })
-    //         const populatedResult = await Promise.all(requests);
-    //         this.result[propertyName] = populatedResult.map(populatedResult => populatedResult.result);
-
-    //         return this;
-    //     } else {
-    //         if (propDefinition.ref) {
-    //             let identifierSplit = value.split("/");
-    //             let identifier = identifierSplit[identifierSplit.length - 1];
-    //             this.result[propertyName] = (await propDefinition.ref.findByIdentifier(identifier)).result;
-    //             return this;
-    //         }
-    //     }
-    //     return this;
-    // }
-
 }
