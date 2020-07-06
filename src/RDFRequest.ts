@@ -31,7 +31,7 @@ export class RDFRequest {
             const data = result.data.results;
             return data ? data : result.data;
         } catch (err) {
-            console.log(err);
+            throw Error(err)
         }
     }
 

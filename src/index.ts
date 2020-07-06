@@ -15,7 +15,7 @@ const prefixes = {
 
 const PersonSchema = data.personSchema;
 
-const req = new RDFRequest("http://localhost:9999/bigdata/sparql", "http://localhost:9999/bigdata/sparql");
+const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 
 const Person = RDF.createModel(PersonSchema, req);
 
@@ -51,9 +51,15 @@ const Main = RDF.createModel(MainSchema, reqPerson);
 
 (async function() {
 
-    console.log(
-        await Person.find()
-    )
+    try {
+    const people = await Person.find({}, 
+        (nquads) => console.log(nquads),
+        );
+    console.log(people)
+    } catch (e) {
+        console.log(e)
+    }
+
 
 
 })()

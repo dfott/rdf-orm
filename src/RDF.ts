@@ -8,6 +8,9 @@ export interface FindParameters {
     [propertyName: string]: string | number;
 }
 
+export type NquadFunction = (nquads: String) => void;
+export type QueryFunction = (query: string) => string;
+
 /**
  * This is the main class, used to create a model. The model can then be used to perform all CRUD operations available.
  */
@@ -27,46 +30,63 @@ export class RDF {
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them.
              * @param findParameters? - optional object, that can contain properties and their values to filter the result 
              */
-            async find(findParameters?: FindParameters): Promise<LDResourceList> {
-                const selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
+            async find(findParameters?: FindParameters, nquadFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResourceList> {
+                let selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
-                const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" });
-                const rdfResult = new LdConverter(request, schema, nquads);
-                const res = await rdfResult.toLDResourceList(schema.properties, schema.prefixes)
-                return Promise.resolve(
-                    res
-                );
+                if (queryFunction) selectQuery = queryFunction(selectQuery);
+                try {
+                    const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" });
+                    if (nquadFunction) nquadFunction(new String(nquads));
+                    const rdfResult = new LdConverter(request, schema, nquads);
+                    const res = await rdfResult.toLDResourceList(schema.properties, schema.prefixes)
+                    return Promise.resolve(
+                        res
+                    );
+                } catch (e) {
+                    throw new Error(e);
+                }
             }
 
             /**
              * Finds a resource and its properties, based on the given identifier 
              * @param identifier 
              */
-            async findByIdentifier(identifier: string): Promise<LDResource> {
-                const selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
-                // console.log(selectQuery)
-                const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
-                const rdfResult = new LdConverter(request, schema, nquads);
-                const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
-                return Promise.resolve(
-                    res
-                );
+            async findByIdentifier(identifier: string, nquadFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResource> {
+                let selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
+                if (queryFunction) selectQuery = queryFunction(selectQuery);
+                try {
+                    const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
+                    if (nquadFunction) nquadFunction(new String(nquads));
+                    const rdfResult = new LdConverter(request, schema, nquads);
+                    const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
+                    return Promise.resolve(
+                        res
+                    );
+                } catch (e) {
+                    throw new Error(e);
+                }
             }
 
             /**
              * Finds exactly one resource and its properties, if specified based on the findparameters
              * @param findParameters 
              */
-            async findOne(findParameters?: FindParameters): Promise<LDResource> {
+            async findOne(findParameters?: FindParameters, nquadFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResource> {
                 let selectQuery = findParameters ? QueryBuilder.buildFindFiltered(schema, findParameters) : 
                     QueryBuilder.buildFind(schema);
                 selectQuery = QueryBuilder.limit(1, selectQuery);
-                const nquads = await request.query(selectQuery, { "Accept": "application/n-quads"});
-                const rdfResult = new LdConverter(request, schema, nquads);
-                const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
-                return Promise.resolve(
-                    res
-                );
+                if (queryFunction) selectQuery = queryFunction(selectQuery);
+                try {
+                    const nquads = await request.query(selectQuery, { "Accept": "application/n-quads"});
+                    if (nquadFunction) nquadFunction(new String(nquads));
+                    const rdfResult = new LdConverter(request, schema, nquads);
+                    const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
+                    return Promise.resolve(
+                        res
+                    );
+                } catch (e) {
+                    throw new Error(e)
+                }
             }
 
             /**
@@ -85,21 +105,31 @@ export class RDF {
              * resource that is filtered by the given findParameters values
              * @param findParameters? - optional object, that can contain properties and their values to filter the result 
              */
-            async delete(findParameters?: FindParameters): Promise<boolean>{
-                const deleteQuery = findParameters ? QueryBuilder.buildDeleteFiltered(schema, findParameters) : 
+            async delete(findParameters?: FindParameters, queryFunction?: QueryFunction): Promise<boolean>{
+                let deleteQuery = findParameters ? QueryBuilder.buildDeleteFiltered(schema, findParameters) : 
                     QueryBuilder.buildDelete(schema);
-                await request.update(deleteQuery);
-                return Promise.resolve(true);
+                if (queryFunction) deleteQuery = queryFunction(deleteQuery);
+                try {
+                    await request.update(deleteQuery);
+                    return Promise.resolve(true);
+                } catch (e) {
+                    throw new Error(e);
+                }
             }
 
             /**
              * Deletes a resource and its properties, based on the given identifier 
              * @param identifier 
              */
-            async deleteByIdentifier(identifier: string): Promise<boolean> {
-                const deleteQuery = QueryBuilder.buildDeleteByIdentifier(schema, identifier);
-                await request.update(deleteQuery);
-                return Promise.resolve(true);
+            async deleteByIdentifier(identifier: string, queryFunction?: QueryFunction): Promise<boolean> {
+                let deleteQuery = QueryBuilder.buildDeleteByIdentifier(schema, identifier);
+                if (queryFunction) deleteQuery = queryFunction(deleteQuery);
+                try {
+                    await request.update(deleteQuery);
+                    return Promise.resolve(true);
+                } catch (e) {
+                    throw new Error(e);
+                }
             }
 
         }
