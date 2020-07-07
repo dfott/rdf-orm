@@ -11,6 +11,9 @@ export interface FindParameters {
 export type NquadFunction = (nquads: String) => void;
 export type QueryFunction = (query: string) => string;
 
+export type NextFunction = () => void;
+export type PreHookFunction = (next: NextFunction, values?: LDResource) => void;
+
 /**
  * This is the main class, used to create a model. The model can then be used to perform all CRUD operations available.
  */
@@ -25,6 +28,8 @@ export class RDF {
         return new class Model implements IRDFModel {
 
             public schema: Schema = schema;
+
+            private preSaveHook?: PreHookFunction;
 
             /**
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them.
@@ -95,7 +100,7 @@ export class RDF {
              */
             async create(values: PropertyValues): Promise<LDResource> {
                 const rdfResult =  new LdConverter(request, schema, {});
-                const ld = await rdfResult.generateInitialLDResource(values);
+                const ld = await rdfResult.generateInitialLDResource(values, this.preSaveHook);
 
                 return Promise.resolve(ld);
             }
@@ -105,7 +110,7 @@ export class RDF {
              * resource that is filtered by the given findParameters values
              * @param findParameters? - optional object, that can contain properties and their values to filter the result 
              */
-            async delete(findParameters?: FindParameters, queryFunction?: QueryFunction): Promise<boolean>{
+            async delete(findParameters?: FindParameters, queryFunction?: QueryFunction): Promise<boolean> {
                 let deleteQuery = findParameters ? QueryBuilder.buildDeleteFiltered(schema, findParameters) : 
                     QueryBuilder.buildDelete(schema);
                 if (queryFunction) deleteQuery = queryFunction(deleteQuery);
@@ -129,6 +134,14 @@ export class RDF {
                     return Promise.resolve(true);
                 } catch (e) {
                     throw new Error(e);
+                }
+            }
+
+            pre(type: string, callback: PreHookFunction) {
+                switch(type) {
+                    case "save":
+                        this.preSaveHook = callback;
+                        break;
                 }
             }
 

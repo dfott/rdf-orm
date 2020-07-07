@@ -18,7 +18,7 @@ export interface LDResource {
     "@type": string,
     "@context": Context,
     [propName: string]: any,
-    save: () => Promise<string>,
+    save: () => Promise<void>,
     populate: (propertyName: string) => Promise<LDResource>,
 }
 

@@ -1,10 +1,11 @@
-import { Schema } from "./models/RDFModel";
+import { Schema, PropertyValues } from "./models/RDFModel";
 import { RDFRequest } from "./RDFRequest";
 import data from "./PersonTestData";
 import blogData from "./BlogTestData";
 
 import * as jsonld from "jsonld";
-import { RDF } from "./RDF";
+import { RDF, NextFunction } from "./RDF";
+import { LDResource } from "./models/JsonLD";
 
 const prefixes = {
     "rdf": "http://rdf.com/",
@@ -15,7 +16,7 @@ const prefixes = {
 
 const PersonSchema = data.personSchema;
 
-const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
+const req = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
 
 const Person = RDF.createModel(PersonSchema, req);
 
@@ -47,19 +48,30 @@ const MainSchema: Schema = {
 
 const Main = RDF.createModel(MainSchema, reqPerson);
 
-
+Person.pre("save", (next: NextFunction, values?: LDResource) => {
+    if (values) {
+        if (values.firstname) {
+            values.firstname = "Leinad"
+        }
+    }
+    console.log(values);
+    next();
+});
 
 (async function() {
 
-    try {
-    const people = await Person.find({}, 
-        (nquads) => console.log(nquads),
-        );
-    console.log(people)
-    } catch (e) {
-        console.log(e)
-    }
 
+    const daniel = await Person.create({
+        identifier: "DanielFott", firstname: "Daniel", lastname: "Fott", age: 20
+    });
+
+    await daniel.save();
+
+    console.log(
+        await Person.find()
+    )
+
+    console.log("hallo")
 
 
 })()

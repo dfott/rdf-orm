@@ -5,6 +5,7 @@ import { StringGenerator } from "./StringGenerator";
 
 import * as jsonld from "jsonld";
 import { Context, LDResource, LDResourceList, JsonLD } from "./models/JsonLD";
+import { PreHookFunction } from "./RDF";
 
 
 export interface RawJsonLDResource {
@@ -34,7 +35,7 @@ export class LdConverter {
      * Generates an initial LDResource object, that can be used to save a resource with the given values in a triplestore
      * @param values 
      */
-    public async generateInitialLDResource(values: PropertyValues): Promise<LDResource> {
+    public async generateInitialLDResource(values: PropertyValues, preSaveHook?: PreHookFunction): Promise<LDResource> {
         const context = this.buildContext(this.schema.properties, this.schema.prefixes);
         const newValues = { ...values }
         delete newValues.identifier;
@@ -48,7 +49,15 @@ export class LdConverter {
         const converted = await jsonld.fromRDF(nquads);
         const finalLd = await jsonld.compact(converted, context) as LDResource;
         this.convertLDValues(finalLd)
-        finalLd.save = () => this.save(finalLd, this.schema) 
+        // finalLd.save = () => this.save(finalLd, this.schema) 
+        if (preSaveHook) {
+            finalLd.save = () => {
+                preSaveHook(() => this.save(finalLd, this.schema), finalLd);
+                return Promise.resolve();
+            }
+        } else {
+            finalLd.save = () => this.save(finalLd, this.schema);
+        }
         return Promise.resolve(finalLd);
     }
 
@@ -160,24 +169,24 @@ export class LdConverter {
     /**
      * This function is added to newly created LDResources. It is used to save the resource in a triplestore. 
      */
-    public async save(ldResource: LDResource, schema: Schema): Promise<string> {
+    public async save(ldResource: LDResource, schema: Schema): Promise<void> {
         const values: PropertyValues = { identifier: ldResource["@id"] };
         this.extractValuesFromLD(values, ldResource, schema.properties);
         const insertQuery = QueryBuilder.buildInsert(values, schema);
         await this.request.update(insertQuery);
         ldResource.save = () => this.update(ldResource, schema);
-        return Promise.resolve(insertQuery);
+        return Promise.resolve();
     }
 
     /**
      * Updates the tupels in the triplestore to contain the values of the ldResource object.
      */
-    private async update(ldResource: LDResource, schema: Schema): Promise<string> {
+    private async update(ldResource: LDResource, schema: Schema): Promise<void> {
         const values: PropertyValues = { identifier: ldResource["@id"]};
         this.extractValuesFromLD(values, ldResource, schema.properties);
         const updateQuery = QueryBuilder.buildUpdate(values, schema);
         await this.request.update(updateQuery);
-        return Promise.resolve(updateQuery);
+        return Promise.resolve();
     }
 
     /**

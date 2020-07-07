@@ -1,5 +1,5 @@
 import { LdConverter } from "../LdConverter";
-import { FindParameters, NquadFunction, QueryFunction } from "../RDF";
+import { FindParameters, NquadFunction, QueryFunction, PreHookFunction } from "../RDF";
 import { LDResourceList, LDResource } from "./JsonLD";
 
 export interface PrefixList {
@@ -32,10 +32,11 @@ export interface Schema {
 
 export interface IRDFModel {
     schema?: Schema;
-    create(values: PropertyValues): Promise<LDResource>
+    create(values: PropertyValues, preSaveHook?: PreHookFunction): Promise<LDResource>
     find(findParameters?: FindParameters, nquadsFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResourceList>
     findByIdentifier(identifier: string, nquadsFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResource>
     findOne(findParameters?: FindParameters, nquadsFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResource>
     delete(findParameters?: FindParameters, queryFunction?: QueryFunction): Promise<boolean>
     deleteByIdentifier(identifier: string, queryFunction?: QueryFunction): Promise<boolean>
+    pre(type: string, callback: PreHookFunction): void
 }
