@@ -90,7 +90,11 @@ export class StringGenerator {
     private static pushValueToStatements(statementList: string[], uri: string, property: Property, propertyName: string, value: any) {
         if (property.type === "uri" && property.ref) {
             // const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
-            const rdfObject = value;
+            let rdfObject = value;
+            if (typeof value === "object" && value.relative) { 
+                rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
+            }
+            console.log("rdfobject", rdfObject, value)
             statementList.push(`<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`);
         } else {
             if (property.type !== "integer") {
@@ -116,6 +120,14 @@ export class StringGenerator {
             const value = this.getValue(findParameters, findParam, properties);
             return `?${resourceType} ${property.prefix}:${findParam} ${value} .`;
         }).join("\n")
+    }
+
+    public static filteredGraphPattern(properties: PropertyList, findParameters: FindParameters, resourceType: string): string {
+        return Object.keys(findParameters).map((findParam: string) => {
+            const property = this.getProperty(properties[findParam]);
+            if (!property) throw Error(`Cannot filter by property ${findParam} as it is not a property of type ${resourceType}.`)
+            return `?${resourceType} ${property.prefix}:${findParam} ?${findParam} .`;
+        }).join("\n");
     }
 
     /**

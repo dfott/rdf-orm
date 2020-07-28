@@ -38,5 +38,7 @@ export interface IRDFModel {
     findOne(findParameters?: FindParameters, nquadsFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResource>
     delete(findParameters?: FindParameters, queryFunction?: QueryFunction): Promise<boolean>
     deleteByIdentifier(identifier: string, queryFunction?: QueryFunction): Promise<boolean>
+    update(updateParameters: FindParameters, findParameters?: FindParameters): Promise<boolean>
+    updateByIdentifier(identifiser: string, updateParameters: FindParameters): Promise<boolean>
     pre(type: string, callback: PreHookFunction): void
 }

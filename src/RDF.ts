@@ -94,6 +94,26 @@ export class RDF {
                 }
             }
 
+            async update(updateParameters: FindParameters, findParameters?: FindParameters): Promise<boolean> {
+                const updateQuery = QueryBuilder.buildFilteredUpdate(schema, updateParameters, findParameters);
+                try {
+                    await request.update(updateQuery);
+                    return Promise.resolve(true);
+                } catch (e) {
+                    throw new Error(e);
+                }
+            }
+
+            async updateByIdentifier(identifier: string, updateParameters: FindParameters): Promise<boolean> {
+                const updateQuery = QueryBuilder.buildUpdateByIdentifier(schema, updateParameters, identifier);
+                try {
+                    await request.update(updateQuery);
+                    return Promise.resolve(true);
+                } catch (e) {
+                    throw new Error(e);
+                }
+            }
+
             /**
              * Creates a LdConverter Object, which can then be used to for example save the given values in a triplestore.
              * @param values - values for every property, specified in the model schema

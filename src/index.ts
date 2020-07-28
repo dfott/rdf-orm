@@ -6,6 +6,7 @@ import blogData from "./BlogTestData";
 import * as jsonld from "jsonld";
 import { RDF, NextFunction } from "./RDF";
 import { LDResource } from "./models/JsonLD";
+import { StringGenerator } from "./StringGenerator";
 
 const prefixes = {
     "rdf": "http://rdf.com/",
@@ -16,7 +17,7 @@ const prefixes = {
 
 const PersonSchema = data.personSchema;
 
-const req = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
+const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 
 const Person = RDF.createModel(PersonSchema, req);
 
@@ -48,30 +49,26 @@ const MainSchema: Schema = {
 
 const Main = RDF.createModel(MainSchema, reqPerson);
 
-Person.pre("save", (next: NextFunction, values?: LDResource) => {
-    if (values) {
-        if (values.firstname) {
-            values.firstname = "Leinad"
-        }
-    }
-    console.log(values);
-    next();
-});
-
 (async function() {
 
+    // await Person.update({ age: 18, lastname: "TEST" }, { lastname: "Test"});
+    await Person.updateByIdentifier("DanielFott", { age: 32 })
 
-    const daniel = await Person.create({
-        identifier: "DanielFott", firstname: "Daniel", lastname: "Fott", age: 20
-    });
+    // const main1 = await Main.create({
+    //     identifier: "Main1",
+    //     firstname: "Main",
+    //     knows: "http://schema.org/Sub/sub1"
+    // });
+    // console.log(main1)
+    // await main1.save();
 
-    await daniel.save();
-
-    console.log(
-        await Person.find()
-    )
-
-    console.log("hallo")
+    // const main2 = await Main.create({
+    //     identifier: "Main2",
+    //     firstname: "zweimain",
+    //     knows: { relative: "sub1"} 
+    // });
+    // console.log(main2)
+    // await main2.save();
 
 
 })()

@@ -37,6 +37,34 @@ export class QueryBuilder {
             .concat(`\n}`)
     }
 
+    public static buildFilteredUpdate(schema: Schema, updateParams: FindParameters, findParameters?: FindParameters): string {
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`delete {\n`)
+            .concat(`${StringGenerator.filteredGraphPattern(schema.properties, updateParams, schema.resourceType)}`)
+            .concat(`\n}\n`)
+            .concat("insert {\n")
+            .concat(`${StringGenerator.whereStringFiltered(schema.properties, updateParams, schema.resourceType)}`)
+            .concat("\n}\n")
+            .concat("where {\n")
+            .concat(StringGenerator.whereString(schema.properties, schema.resourceType))
+            .concat(findParameters ? StringGenerator.whereStringFiltered(schema.properties, findParameters, schema.resourceType) : "")
+            .concat(`\n}\n`);
+    }
+
+    public static buildUpdateByIdentifier(schema: Schema, updateParams: FindParameters, identifier: string): string {
+        return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`delete {\n`)
+            .concat(`${StringGenerator.filteredGraphPattern(schema.properties, updateParams, schema.resourceType)}`)
+            .concat(`\n}\n`)
+            .concat("insert {\n")
+            .concat(`${StringGenerator.whereStringFiltered(schema.properties, updateParams, schema.resourceType)}`)
+            .concat("\n}\n")
+            .concat("where {\n")
+            .concat(StringGenerator.whereString(schema.properties, schema.resourceType) + "\n")
+            .concat(StringGenerator.identifier(schema, identifier))
+            .concat(`\n}\n`);
+    }
+
     /**
      * Builds a find query, which would find every tupel that is modelled by the given schema
      * @param schema - schema that provides the necessary information about the model
