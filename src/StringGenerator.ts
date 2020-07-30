@@ -87,6 +87,14 @@ export class StringGenerator {
         return statementList.join(" .\n").concat(" .");
     }
 
+    /**
+     * Pushes a triple statement to a list. 
+     * @param statementList 
+     * @param uri 
+     * @param property 
+     * @param propertyName 
+     * @param value 
+     */
     private static pushValueToStatements(statementList: string[], uri: string, property: Property, propertyName: string, value: any) {
         if (property.type === "uri" && property.ref) {
             // const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
@@ -122,6 +130,12 @@ export class StringGenerator {
         }).join("\n")
     }
 
+    /**
+     * Generates a filtered graph pattern, that only contains triples, based on the given findParameters
+     * @param properties 
+     * @param findParameters 
+     * @param resourceType 
+     */
     public static filteredGraphPattern(properties: PropertyList, findParameters: FindParameters, resourceType: string): string {
         return Object.keys(findParameters).map((findParam: string) => {
             const property = this.getProperty(properties[findParam]);
@@ -151,6 +165,13 @@ export class StringGenerator {
         return Array.isArray(prop) ? prop[0] : prop
     }
 
+    /**
+     * Used when inserting literals in a triple. If the given property was defined to be of type string,
+     * this function returns the value inside two quotation marks.
+     * @param findParameters 
+     * @param findParam 
+     * @param properties 
+     */
     public static getValue(findParameters: FindParameters, findParam: string, properties: PropertyList): string {
         const propDef = this.getProperty(properties[findParam]);
         const val = findParameters[findParam];

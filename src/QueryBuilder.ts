@@ -37,6 +37,13 @@ export class QueryBuilder {
             .concat(`\n}`)
     }
 
+    /**
+     * Builds a filtered update query, which update the in updateParams specified properties. Optionally, the findParameters
+     * object dictates, which tuples will be affected by the update.
+     * @param schema 
+     * @param updateParams 
+     * @param findParameters 
+     */
     public static buildFilteredUpdate(schema: Schema, updateParams: FindParameters, findParameters?: FindParameters): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`delete {\n`)
@@ -51,6 +58,12 @@ export class QueryBuilder {
             .concat(`\n}\n`);
     }
 
+    /**
+     * Builds a update query, that updates some properties of a resource, based on the given identifier. 
+     * @param schema 
+     * @param updateParams 
+     * @param identifier 
+     */
     public static buildUpdateByIdentifier(schema: Schema, updateParams: FindParameters, identifier: string): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`delete {\n`)
