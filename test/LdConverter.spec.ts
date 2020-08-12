@@ -26,8 +26,8 @@ describe("LdConverter", function() {
         const converter = new LdConverter(blogData.req, blogData.BlogSchema, {});
         const ldResource = await converter.generateInitialLDResource(values);
 
-        const expectedIdentifier = `${BlogSchema.resourceSchema}${BlogSchema.resourceType}/${values.identifier}`;
-        const expectedType = `${BlogSchema.resourceSchema}${BlogSchema.resourceType}`;
+        const expectedIdentifier = `${BlogSchema.baseURI}${BlogSchema.resourceType}/${values.identifier}`;
+        const expectedType = `${BlogSchema.baseURI}${BlogSchema.resourceType}`;
 
         assert.isNotNull(ldResource);
         assert.isObject(ldResource);

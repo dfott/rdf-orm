@@ -1,6 +1,7 @@
 import { StringGenerator } from "./StringGenerator";
 import { PropertyValues, Schema, Property } from "./models/RDFModel";
 import { FindParameters } from "./RDF";
+import { ResourceSchema } from "./ResourceSchema";
 
 export class QueryBuilder {
 
@@ -12,7 +13,7 @@ export class QueryBuilder {
     public static buildInsert(values: PropertyValues, schema: Schema): string {
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`INSERT DATA {\n`) 
-            .concat(StringGenerator.insertString(schema.properties, values, schema.resourceSchema,
+            .concat(StringGenerator.insertString(schema.properties, values, schema.baseURI,
                     schema.resourceType))
             .concat(`\n}`)
     }
@@ -29,7 +30,7 @@ export class QueryBuilder {
             .concat(`${constructGraphPattern}`)
             .concat(`\n}\n`)
             .concat(`insert {\n`)
-            .concat(StringGenerator.insertString(schema.properties, values, schema.resourceSchema, schema.resourceType))
+            .concat(StringGenerator.insertString(schema.properties, values, schema.baseURI, schema.resourceType))
             .concat(`\n}\n`)
             .concat(`where {\n`) 
             .concat(whereGraphPattern + "\n")
@@ -168,7 +169,7 @@ export class QueryBuilder {
         const firstProp = Object.keys(schema.properties)[0];
         const firstPropPrefix = StringGenerator.getProperty(schema.properties[firstProp]).prefix;
         const whereString = `${whereGraphPattern}\n`
-            .concat(`<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`);
+            .concat(`<${schema.baseURI}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`);
 
         return `${StringGenerator.prefixString(schema.prefixes)}\n\n`
             .concat(`delete {\n`)
@@ -176,6 +177,35 @@ export class QueryBuilder {
             .concat(`\n} where {\n`)
             .concat(whereString)
             .concat(`\n}`);
+    }
+
+    public static buildInitialSchemaDefinition(schema: ResourceSchema): string {
+        const rdf = `http://www.w3.org/1999/02/22-rdf-syntax-ns#`;
+        const rdfs = `http://www.w3.org/2000/01/rdf-schema#`;
+        const xsd = `http://www.w3.org/2001/XMLSchema#`;
+
+        const propStatements: string[] = [];
+
+        Object.keys(schema.properties).forEach(prop => {
+            const property = StringGenerator.getProperty(schema.properties[prop]);
+            propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> <${rdf}type> <${rdf}Property>`)
+
+            if (property.type) {
+                if (property.type === "integer") {
+                    propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> <${rdfs}range> <${xsd}integer>`)
+                } else if (property.type === "uri" && property.ref) {
+                    propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> <${rdfs}range> <${property.ref.schema.baseURI}${property.ref.schema.resourceType}>`)
+                }
+            }
+        });
+
+        const query = `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+            .concat(`INSERT DATA {\n`)
+            .concat(`<${schema.baseURI}${schema.resourceType}> <${rdf}type> <${rdfs}Class> . \n`)
+            .concat(schema.label ? `<${schema.baseURI}${schema.resourceType}> <${rdfs}label> "${schema.label}" \n` : "")
+            .concat(propStatements.join(" . \n"))
+            .concat(`\n}`);
+        return query;
     }
 
     /**

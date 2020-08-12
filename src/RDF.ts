@@ -34,6 +34,19 @@ export class RDF {
 
             private preSaveHook?: PreHookFunction;
 
+            async initTupels(): Promise<boolean> {
+
+                const query = QueryBuilder.buildInitialSchemaDefinition(schema);
+                try {
+                    await this.request.update(query);
+                    return Promise.resolve(true);
+                } catch(e) {
+                    console.log(e);
+                    return Promise.resolve(false);
+                }
+
+            }
+
             /**
              * Finds every group of tuples in a triplestore, that represent the created model schema and returns them.
              * @param findParameters? - optional object, that can contain properties and their values to filter the result 

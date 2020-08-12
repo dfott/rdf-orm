@@ -100,7 +100,7 @@ export class StringGenerator {
             // const rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
             let rdfObject = value;
             if (typeof value === "object" && value.relative) { 
-                rdfObject = `${property.ref.schema?.resourceSchema}${property.ref.schema?.resourceType}/${value}` 
+                rdfObject = `${property.ref.schema?.baseURI}${property.ref.schema?.resourceType}/${value}` 
             }
             console.log("rdfobject", rdfObject, value)
             statementList.push(`<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`);
@@ -152,7 +152,7 @@ export class StringGenerator {
     public static identifier(schema: Schema, identifier: string): string {
         const firstProp = Object.keys(schema.properties)[0];
         const firstPropPrefix = this.getProperty(schema.properties[firstProp]).prefix;
-        return `<${schema.resourceSchema}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`;
+        return `<${schema.baseURI}${schema.resourceType}/${identifier}> ${firstPropPrefix}:${firstProp} ?${firstProp}`;
     }
 
     /**

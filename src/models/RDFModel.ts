@@ -13,7 +13,7 @@ export interface Property {
     optional?: boolean;
     type?: "uri" | "integer";
     ref?: IRDFModel;
-    isKey?: boolean;
+    // isKey?: boolean;
 }
 
 export interface PropertyList {
@@ -27,9 +27,11 @@ export interface PropertyValues {
 
 export interface Schema {
     resourceType: string;
-    resourceSchema: string;
+    baseURI: string;
     prefixes: PrefixList;
     properties: PropertyList;
+
+    label?: string;
 }
 
 export interface IRDFModel {
@@ -45,4 +47,5 @@ export interface IRDFModel {
     update(updateParameters: FindParameters, findParameters?: FindParameters): Promise<boolean>
     updateByIdentifier(identifiser: string, updateParameters: FindParameters): Promise<boolean>
     pre(type: string, callback: PreHookFunction): void
+    initTupels(): Promise<boolean>
 }

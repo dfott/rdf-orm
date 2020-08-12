@@ -15,7 +15,7 @@ const req = new RDFRequest("http://localhost:3030/testblog/query", "http://local
 
 const CommentSchema: Schema = {
     prefixes: prefixes,
-    resourceSchema: prefixes.schema,
+    baseURI: prefixes.schema,
     resourceType: "Comment",
     properties: {
         content: { prefix: "rdf" }
@@ -26,7 +26,7 @@ const Comment = RDF.createModel(new ResourceSchema(CommentSchema), req);
 
 const BlogSchema: Schema = {
     prefixes: prefixes,
-    resourceSchema: prefixes.schema,
+    baseURI: prefixes.schema,
     resourceType: "Blog",
     properties: {
         title: { prefix: "schema" },

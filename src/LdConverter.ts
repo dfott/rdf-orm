@@ -41,8 +41,8 @@ export class LdConverter {
         delete newValues.identifier;
         const basicLD = {
             "@context": context,
-            "@id": `${this.schema.resourceSchema}${this.schema.resourceType}/${values.identifier}`,
-            "@type": `${this.schema.resourceSchema}${this.schema.resourceType}`,
+            "@id": `${this.schema.baseURI}${this.schema.resourceType}/${values.identifier}`,
+            "@type": `${this.schema.baseURI}${this.schema.resourceType}`,
             ...newValues
         };
         const nquads = await jsonld.toRDF(basicLD);

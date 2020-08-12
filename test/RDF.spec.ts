@@ -96,7 +96,7 @@ describe("RDF", function() {
         assert.equal(foundDaniel.firstname, data.danielValues.firstname);
         assert.equal(foundDaniel.lastname, data.danielValues.lastname);
         assert.equal(foundDaniel.age, data.danielValues.age);
-        assert.equal(foundDaniel["@id"], `${data.resourceSchema}${data.resourceType}/${data.danielValues.identifier}`);
+        assert.equal(foundDaniel["@id"], `${data.baseURI}${data.resourceType}/${data.danielValues.identifier}`);
     })
     it("should update the firstname and lastname of the resource and save it in the triplestore", async function() {
         let daniel = await Person.findByIdentifier("DanielFott");

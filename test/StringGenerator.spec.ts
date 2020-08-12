@@ -46,14 +46,14 @@ PREFIX schema: <http://schema.org/>`;
     })
 
     it("should generate an insert string with RDF triples, that will be inserted into a triplestore", function() {
-        const uri = `${data.resourceSchema}${data.resourceType}/${data.danielValues.identifier}`;
+        const uri = `${data.baseURI}${data.resourceType}/${data.danielValues.identifier}`;
         const expectedInsertString = 
-`<${uri}> a <${data.resourceSchema}${data.resourceType}> .
+`<${uri}> a <${data.baseURI}${data.resourceType}> .
 <${uri}> rdf:firstname "${data.danielValues.firstname}" .
 <${uri}> rdf:lastname "${data.danielValues.lastname}" .
 <${uri}> schema:age ${data.danielValues.age} .`
 
-        const insertResult = StringGenerator.insertString(data.propertyList, data.danielValues, data.resourceSchema, data.resourceType)
+        const insertResult = StringGenerator.insertString(data.propertyList, data.danielValues, data.baseURI, data.resourceType)
 
         assert.equal(insertResult, expectedInsertString);
     });
@@ -62,13 +62,13 @@ PREFIX schema: <http://schema.org/>`;
         const blog = blogData.BlogSchema;
         const comment = blogData.CommentSchema;
         const blogValues = blogData.exampleBlog1;
-        const uri = `${blog.resourceSchema}${blog.resourceType}/${blogValues.identifier}`;
+        const uri = `${blog.baseURI}${blog.resourceType}/${blogValues.identifier}`;
 
-        const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
+        const expectedInsertString = `<${uri}> a <${blog.baseURI}${blog.resourceType}> .\n`
             .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
             .concat(`<${uri}> schema:comment <${blogValues.comment[0]}> .`);
 
-        assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
+        assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.baseURI, blog.resourceType),
             expectedInsertString);
 
     })
@@ -76,13 +76,13 @@ PREFIX schema: <http://schema.org/>`;
     it("should generate an insert string, which adds a new statement for every value in an array", function() {
         const blog = blogData.BlogSchema;
         const blogValues = blogData.exampleBlog2;
-        const uri = `${blog.resourceSchema}${blog.resourceType}/${blogValues.identifier}`;
-        const expectedInsertString = `<${uri}> a <${blog.resourceSchema}${blog.resourceType}> .\n`
+        const uri = `${blog.baseURI}${blog.resourceType}/${blogValues.identifier}`;
+        const expectedInsertString = `<${uri}> a <${blog.baseURI}${blog.resourceType}> .\n`
             .concat(`<${uri}> schema:title "${blogValues.title}" .\n`)
             .concat(`<${uri}> schema:comment <${blogValues.comment[0]}> .\n`)
             .concat(`<${uri}> schema:comment <${blogValues.comment[1]}> .`);
 
-        assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.resourceSchema, blog.resourceType),
+        assert.equal(StringGenerator.insertString(blog.properties, blogValues, blog.baseURI, blog.resourceType),
             expectedInsertString);
     })
 

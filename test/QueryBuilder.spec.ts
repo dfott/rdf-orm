@@ -11,7 +11,7 @@ describe("QueryBuilder", function() {
 `${StringGenerator.prefixString(data.prefixList)}
 
 INSERT DATA {
-${StringGenerator.insertString(data.propertyList, data.danielValues, data.resourceSchema, data.resourceType)}
+${StringGenerator.insertString(data.propertyList, data.danielValues, data.baseURI, data.resourceType)}
 }`;
 
         assert.equal(QueryBuilder.buildInsert(data.danielValues, data.personSchema), expectedInsertString);

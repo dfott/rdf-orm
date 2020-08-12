@@ -2,6 +2,7 @@ import { RDFRequest } from "./RDFRequest";
 import { RDF } from "./RDF";
 import { ResourceSchema } from "./ResourceSchema";
 import { PrefixList } from "./models/RDFModel";
+import { QueryBuilder } from "./QueryBuilder";
 
 
 // ResourceSchema.buildIdentifier besser!!!
@@ -26,7 +27,7 @@ const request = new RDFRequest("http://localhost:3030/test/query", "http://local
 const ProjectSchema = new ResourceSchema({
     prefixes,
     resourceType: "Project",
-    resourceSchema: prefixes.schema,
+    baseURI: prefixes.schema,
     properties: {
         title: { prefix: "ex" }
     }
@@ -37,7 +38,7 @@ const Project = RDF.createModel(ProjectSchema, request);
 const PresentationSchema = new ResourceSchema({
     prefixes,
     resourceType: "Presentation",
-    resourceSchema: prefixes.schema,
+    baseURI: prefixes.schema,
     properties: {
         content: { prefix: "ex" }
     }
@@ -49,7 +50,7 @@ const Presentation = RDF.createModel(PresentationSchema, request);
 const PersonSchema = new ResourceSchema({
     prefixes,
     resourceType: "Person",
-    resourceSchema: prefixes.schema,
+    baseURI: prefixes.schema,
     properties: {
         firstname: { prefix: "ex" },
         password: { prefix: "ex" },
@@ -59,18 +60,34 @@ const PersonSchema = new ResourceSchema({
     }
 });
 
-const Person = RDF.createModel(PersonSchema, request);
+// const Person = RDF.createModel(PersonSchema, request);
 
-Person.pre("save", (next, values) => {
-    if (values) {
-        values.password = values.password + "GEHASHED";
-    }
-    next();
-});
+// Person.pre("save", (next, values) => {
+//     if (values) {
+//         values.password = values.password + "GEHASHED";
+//     }
+//     next();
+// });
 
 
 
 (async() => {
+
+    // const person = new ResourceSchema({
+    // resourceType: "Person",
+    //         label: "This is a class, representing a person.",
+    //         baseURI: prefixes.schema,
+    //         prefixes,
+    //         properties: {
+    //             firstname: { prefix: "ex" },
+    //             age: { prefix: "ex", type: "integer" },
+    //             project: { prefix: "schema", type: "uri", ref: Project }
+    //         }
+    // });
+
+    // const Person = RDF.createModel(PersonSchema, request);
+
+    // await Person.initTupels();
 
     // const presentation = await Presentation.create({ identifier: "Pres1", content: "Dies ist meine erste Präsentation!"});
     // await presentation.save();
@@ -89,8 +106,8 @@ Person.pre("save", (next, values) => {
     // const person2 = await Person.create({ identifier: "NeuePerson", firstname: "Neue", password: "Neue11", age: 20, presentations: [PresentationSchema.identifier("Pres1")]});
     // await person2.save();
 
-    const person2 = await Person.create({ identifier: "MaxMustermann", firstname: "Max", password: "Muster1", age: 20});
-    await person2.save();
+    // const person2 = await Person.create({ identifier: "MaxMustermann", firstname: "Max", password: "Muster1", age: 20});
+    // await person2.save();
 
     // let foundNeue = await Person.findByIdentifier("NeuePerson");
     // await foundNeue.populate("presentations");
