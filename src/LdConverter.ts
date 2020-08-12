@@ -158,6 +158,7 @@ export class LdConverter {
                     context[propName] = { "@id": schema, "@type": "http://www.w3.org/2001/XMLSchema#integer" };
                 } else if (propDefinition.type === "uri") {
                     context[propName] = { "@id": schema, "@type": "@id" };
+                    // context[propName] = { "@id": schema };
                 }
             } else {
                 context[propName] = { "@id": schema };

@@ -3,6 +3,7 @@ import { QueryBuilder } from "./QueryBuilder"
 import { RDFRequest } from "./RDFRequest"
 import { Schema, IRDFModel, PropertyValues } from "./models/RDFModel";
 import { LDResourceList, LDResource } from "./models/JsonLD";
+import { ResourceSchema } from "./ResourceSchema";
 
 export interface FindParameters {
     [propertyName: string]: string | number;
@@ -24,10 +25,12 @@ export class RDF {
      * @param schema - schema that provides the necessary information about the model
      * @param request - request object, that will send http requests to a specified triplestore
      */
-    public static createModel(schema: Schema, request: RDFRequest): IRDFModel {
+    public static createModel(schema: ResourceSchema, request: RDFRequest): IRDFModel {
         return new class Model implements IRDFModel {
 
-            public schema: Schema = schema;
+            public schema: ResourceSchema = schema;
+            public request: RDFRequest = request;
+            public ldConverter: LdConverter = new LdConverter(request, schema, {});
 
             private preSaveHook?: PreHookFunction;
 
@@ -40,10 +43,10 @@ export class RDF {
                     QueryBuilder.buildFind(schema);
                 if (queryFunction) selectQuery = queryFunction(selectQuery);
                 try {
-                    const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" });
+                    const nquads = await this.request.query(selectQuery, { "Accept": "application/n-quads" });
                     if (nquadFunction) nquadFunction(new String(nquads));
-                    const rdfResult = new LdConverter(request, schema, nquads);
-                    const res = await rdfResult.toLDResourceList(schema.properties, schema.prefixes)
+                    this.ldConverter.nquads = nquads;
+                    const res = await this.ldConverter.toLDResourceList(schema.properties, schema.prefixes)
                     return Promise.resolve(
                         res
                     );
@@ -60,10 +63,10 @@ export class RDF {
                 let selectQuery = QueryBuilder.buildFindByIdentifier(schema, identifier);
                 if (queryFunction) selectQuery = queryFunction(selectQuery);
                 try {
-                    const nquads = await request.query(selectQuery, { "Accept": "application/n-quads" }); 
+                    const nquads = await this.request.query(selectQuery, { "Accept": "application/n-quads" }); 
                     if (nquadFunction) nquadFunction(new String(nquads));
-                    const rdfResult = new LdConverter(request, schema, nquads);
-                    const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
+                    this.ldConverter.nquads = nquads;
+                    const res = await this.ldConverter.toLDResource(schema.properties, schema.prefixes)
                     return Promise.resolve(
                         res
                     );
@@ -82,10 +85,10 @@ export class RDF {
                 selectQuery = QueryBuilder.limit(1, selectQuery);
                 if (queryFunction) selectQuery = queryFunction(selectQuery);
                 try {
-                    const nquads = await request.query(selectQuery, { "Accept": "application/n-quads"});
+                    const nquads = await this.request.query(selectQuery, { "Accept": "application/n-quads"});
                     if (nquadFunction) nquadFunction(new String(nquads));
-                    const rdfResult = new LdConverter(request, schema, nquads);
-                    const res = await rdfResult.toLDResource(schema.properties, schema.prefixes)
+                    this.ldConverter.nquads = nquads;
+                    const res = await this.ldConverter.toLDResource(schema.properties, schema.prefixes)
                     return Promise.resolve(
                         res
                     );
@@ -94,20 +97,31 @@ export class RDF {
                 }
             }
 
+            /**
+             * Updates ressources, based on the given updateParameters. If no findParameters are specified, every tuple, that
+             * represents the schema, will be updated.
+             * @param updateParameters - object, that contains the changes 
+             * @param findParameters 
+             */
             async update(updateParameters: FindParameters, findParameters?: FindParameters): Promise<boolean> {
                 const updateQuery = QueryBuilder.buildFilteredUpdate(schema, updateParameters, findParameters);
                 try {
-                    await request.update(updateQuery);
+                    await this.request.update(updateQuery);
                     return Promise.resolve(true);
                 } catch (e) {
                     throw new Error(e);
                 }
             }
 
+            /**
+             * Updates a resource, identified by the given identifier.
+             * @param identifier 
+             * @param updateParameters - object, that contains the changes 
+             */
             async updateByIdentifier(identifier: string, updateParameters: FindParameters): Promise<boolean> {
                 const updateQuery = QueryBuilder.buildUpdateByIdentifier(schema, updateParameters, identifier);
                 try {
-                    await request.update(updateQuery);
+                    await this.request.update(updateQuery);
                     return Promise.resolve(true);
                 } catch (e) {
                     throw new Error(e);
@@ -119,8 +133,8 @@ export class RDF {
              * @param values - values for every property, specified in the model schema
              */
             async create(values: PropertyValues): Promise<LDResource> {
-                const rdfResult =  new LdConverter(request, schema, {});
-                const ld = await rdfResult.generateInitialLDResource(values, this.preSaveHook);
+                this.ldConverter.nquads = {};
+                const ld = await this.ldConverter.generateInitialLDResource(values, this.preSaveHook);
 
                 return Promise.resolve(ld);
             }
@@ -135,7 +149,7 @@ export class RDF {
                     QueryBuilder.buildDelete(schema);
                 if (queryFunction) deleteQuery = queryFunction(deleteQuery);
                 try {
-                    await request.update(deleteQuery);
+                    await this.request.update(deleteQuery);
                     return Promise.resolve(true);
                 } catch (e) {
                     throw new Error(e);
@@ -150,13 +164,18 @@ export class RDF {
                 let deleteQuery = QueryBuilder.buildDeleteByIdentifier(schema, identifier);
                 if (queryFunction) deleteQuery = queryFunction(deleteQuery);
                 try {
-                    await request.update(deleteQuery);
+                    await this.request.update(deleteQuery);
                     return Promise.resolve(true);
                 } catch (e) {
                     throw new Error(e);
                 }
             }
 
+            /**
+             * Adds the given function as a lifecycle hook. 
+             * @param type - type of the lifecycle, e.g. "save"
+             * @param callback - function that is called at the specified lifecycle
+             */
             pre(type: string, callback: PreHookFunction) {
                 switch(type) {
                     case "save":

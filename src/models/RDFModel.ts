@@ -1,6 +1,8 @@
 import { LdConverter } from "../LdConverter";
 import { FindParameters, NquadFunction, QueryFunction, PreHookFunction } from "../RDF";
 import { LDResourceList, LDResource } from "./JsonLD";
+import { RDFRequest } from "../RDFRequest";
+import { ResourceSchema } from "../ResourceSchema";
 
 export interface PrefixList {
     [prefix: string]: string,
@@ -31,7 +33,9 @@ export interface Schema {
 }
 
 export interface IRDFModel {
-    schema?: Schema;
+    schema: ResourceSchema;
+    request: RDFRequest;
+    ldConverter: LdConverter;
     create(values: PropertyValues, preSaveHook?: PreHookFunction): Promise<LDResource>
     find(findParameters?: FindParameters, nquadsFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResourceList>
     findByIdentifier(identifier: string, nquadsFunction?: NquadFunction, queryFunction?: QueryFunction): Promise<LDResource>

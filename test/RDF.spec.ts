@@ -1,8 +1,9 @@
 import { assert } from "chai";
 import data from "../src/PersonTestData";
 import { RDF } from "../src/RDF";
+import { ResourceSchema } from "../src/ResourceSchema";
 
-const Person = RDF.createModel(data.personSchema, data.request);
+const Person = RDF.createModel(new ResourceSchema(data.personSchema), data.request);
 
 describe("RDF", function() {
     before(async function() {

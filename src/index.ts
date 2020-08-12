@@ -1,74 +1,117 @@
-import { Schema, PropertyValues } from "./models/RDFModel";
 import { RDFRequest } from "./RDFRequest";
-import data from "./PersonTestData";
-import blogData from "./BlogTestData";
+import { RDF } from "./RDF";
+import { ResourceSchema } from "./ResourceSchema";
+import { PrefixList } from "./models/RDFModel";
 
-import * as jsonld from "jsonld";
-import { RDF, NextFunction } from "./RDF";
-import { LDResource } from "./models/JsonLD";
-import { StringGenerator } from "./StringGenerator";
 
-const prefixes = {
-    "rdf": "http://rdf.com/",
+// ResourceSchema.buildIdentifier besser!!!
+
+// im Dokument Mongoose + meine Ausführung gegenüber stellen.
+// + neben der Beispiele für Funktionsausführungen auch die Tupel darstellen, die durch diese Zeilen erstellt wurden.
+
+// bei PropertyValues beim create ein LDResource oder LDResourceList erlauben
+
+// hooks erweitern + selbst nutzen
+
+
+// update funktionsübergabe für bsp age +1
+
+const prefixes: PrefixList = {
+    "ex": "http://example.org/",
     "schema": "http://schema.org/",
-    "bayer": "http://10.122.106.16:3000/"
 };
 
+const request = new RDFRequest("http://localhost:3030/test/query", "http://localhost:3030/test/update");
 
-const PersonSchema = data.personSchema;
-
-const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
-
-const Person = RDF.createModel(PersonSchema, req);
-
-const Blog = RDF.createModel(blogData.BlogSchema, req);
-const Comment = RDF.createModel(blogData.CommentSchema, req);
-
-const reqPerson = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
-
-const SubSchema: Schema = {
-    resourceSchema: prefixes.schema,
-    resourceType: "Sub",
+const ProjectSchema = new ResourceSchema({
     prefixes,
-    properties: {
-        firstname: { prefix: "rdf" }
-    }
-};
-
-const Sub = RDF.createModel(SubSchema, reqPerson);
-
-const MainSchema: Schema = {
-    resourceType: "Main",
+    resourceType: "Project",
     resourceSchema: prefixes.schema,
-    prefixes,
     properties: {
-        firstname: { prefix: "rdf" },
-        knows: { prefix: "rdf", type: "uri", ref: Sub }
+        title: { prefix: "ex" }
     }
-}
+});
 
-const Main = RDF.createModel(MainSchema, reqPerson);
+const Project = RDF.createModel(ProjectSchema, request);
 
-(async function() {
+const PresentationSchema = new ResourceSchema({
+    prefixes,
+    resourceType: "Presentation",
+    resourceSchema: prefixes.schema,
+    properties: {
+        content: { prefix: "ex" }
+    }
+});
 
-    // await Person.update({ age: 18, lastname: "TEST" }, { lastname: "Test"});
-    await Person.updateByIdentifier("DanielFott", { age: 32 })
+const Presentation = RDF.createModel(PresentationSchema, request);
 
-    // const main1 = await Main.create({
-    //     identifier: "Main1",
-    //     firstname: "Main",
-    //     knows: "http://schema.org/Sub/sub1"
-    // });
-    // console.log(main1)
-    // await main1.save();
 
-    // const main2 = await Main.create({
-    //     identifier: "Main2",
-    //     firstname: "zweimain",
-    //     knows: { relative: "sub1"} 
-    // });
-    // console.log(main2)
-    // await main2.save();
+const PersonSchema = new ResourceSchema({
+    prefixes,
+    resourceType: "Person",
+    resourceSchema: prefixes.schema,
+    properties: {
+        firstname: { prefix: "ex" },
+        password: { prefix: "ex" },
+        age: { prefix: "ex", type: "integer" },
+        project: { prefix: "ex", type: "uri", optional: true, ref: Project },
+        presentations: [{ prefix: "schema", type: "uri", optional: true, ref: Presentation }]
+    }
+});
 
+const Person = RDF.createModel(PersonSchema, request);
+
+Person.pre("save", (next, values) => {
+    if (values) {
+        values.password = values.password + "GEHASHED";
+    }
+    next();
+});
+
+
+
+(async() => {
+
+    // const presentation = await Presentation.create({ identifier: "Pres1", content: "Dies ist meine erste Präsentation!"});
+    // await presentation.save();
+
+    // const presentation2 = await Presentation.create({ identifier: "Pres2", content: "Dies die zweite Präsentation!"});
+    // await presentation2.save();
+
+    // const project = await Project.create({ identifier: "Project1", title: "First Project"});
+    // await project.save();
+
+    // // const meinrpoject = ;
+    // // const person = await Person.create({ identifier: "DanielFott", firstname: "Daniel", password: "Daniel11", age: 20, project: (await Project.findOne({ title: "Hallo" }))["@id"]});
+    // const person = await Person.create({ identifier: "DanielFott", firstname: "Daniel", password: "Daniel11", age: 20, project: ProjectSchema.identifier("Project1")});
+    // await person.save();
+
+    // const person2 = await Person.create({ identifier: "NeuePerson", firstname: "Neue", password: "Neue11", age: 20, presentations: [PresentationSchema.identifier("Pres1")]});
+    // await person2.save();
+
+    const person2 = await Person.create({ identifier: "MaxMustermann", firstname: "Max", password: "Muster1", age: 20});
+    await person2.save();
+
+    // let foundNeue = await Person.findByIdentifier("NeuePerson");
+    // await foundNeue.populate("presentations");
+    // console.log(foundNeue)
+    // foundNeue.presentations.push(PresentationSchema.identifier("Pres2"));
+    // await foundNeue.save();
+
+    // const foundPerson = await Person.findByIdentifier("DanielFott");
+    // await foundPerson.populate("project")
+
+    // const result = await Person.find();
+    // const result = await Person.findOne();
+    // const result = await Person.findByIdentifier();
+
+    // await Person.update({ age: 20 }, { firstname: "Daniel"});
+    // await Person.updateByIdentifier();
+
+    // await Person.delete();
+    // await Person.deleteByIdentifier();
+
+    // const person = await Person.findByIdentifier("NeuePerson");
+    // await person.populate("presentations")
 
 })()

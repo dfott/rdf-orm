@@ -1,6 +1,7 @@
 import { RDFRequest } from "./RDFRequest";
 import { Schema, Property, PropertyValues } from "./models/RDFModel";
 import { RDF } from "./RDF";
+import { ResourceSchema } from "./ResourceSchema";
 
 const prefixes = {
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -21,7 +22,7 @@ const CommentSchema: Schema = {
     }
 }
 
-const Comment = RDF.createModel(CommentSchema, req);
+const Comment = RDF.createModel(new ResourceSchema(CommentSchema), req);
 
 const BlogSchema: Schema = {
     prefixes: prefixes,
@@ -37,7 +38,7 @@ const CommentArrayProperty: Property = {
     prefix: "schema", optional: true, type: "uri", ref: Comment
 }
 
-const Blog = RDF.createModel(BlogSchema, req);
+const Blog = RDF.createModel(new ResourceSchema(BlogSchema), req);
 
 const exampleBlog1: PropertyValues = {
     identifier: "blog1",
