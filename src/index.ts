@@ -73,21 +73,22 @@ const PersonSchema = new ResourceSchema({
 
 (async() => {
 
-    // const person = new ResourceSchema({
-    // resourceType: "Person",
-    //         label: "This is a class, representing a person.",
-    //         baseURI: prefixes.schema,
-    //         prefixes,
-    //         properties: {
-    //             firstname: { prefix: "ex" },
-    //             age: { prefix: "ex", type: "integer" },
-    //             project: { prefix: "schema", type: "uri", ref: Project }
-    //         }
-    // });
+    const person = new ResourceSchema({
+    resourceType: "Person",
+            label: "This is a class, representing a person.",
+            baseURI: prefixes.schema,
+            prefixes,
+            properties: {
+                firstname: { prefix: "ex" },
+                age: { prefix: "ex", type: "integer" },
+                project: { prefix: "schema", type: "uri", ref: Project }
+            }
+    });
 
-    // const Person = RDF.createModel(PersonSchema, request);
+    const Person = RDF.createModel(PersonSchema, request);
 
-    // await Person.initTupels();
+
+    await Person.initTupels();
 
     // const presentation = await Presentation.create({ identifier: "Pres1", content: "Dies ist meine erste Präsentation!"});
     // await presentation.save();

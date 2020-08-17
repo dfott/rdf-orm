@@ -179,32 +179,16 @@ export class QueryBuilder {
             .concat(`\n}`);
     }
 
-    public static buildInitialSchemaDefinition(schema: ResourceSchema): string {
-        const rdf = `http://www.w3.org/1999/02/22-rdf-syntax-ns#`;
-        const rdfs = `http://www.w3.org/2000/01/rdf-schema#`;
-        const xsd = `http://www.w3.org/2001/XMLSchema#`;
+    public static buildInitialTypeDefinition(schema: ResourceSchema): string {
 
-        const propStatements: string[] = [];
-
-        Object.keys(schema.properties).forEach(prop => {
-            const property = StringGenerator.getProperty(schema.properties[prop]);
-            propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> <${rdf}type> <${rdf}Property>`)
-
-            if (property.type) {
-                if (property.type === "integer") {
-                    propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> <${rdfs}range> <${xsd}integer>`)
-                } else if (property.type === "uri" && property.ref) {
-                    propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> <${rdfs}range> <${property.ref.schema.baseURI}${property.ref.schema.resourceType}>`)
-                }
-            }
-        });
-
-        const query = `${StringGenerator.prefixString(schema.prefixes)}\n\n`
+        const query = `${StringGenerator.prefixString(schema.prefixes)}\n`
+            .concat(`${StringGenerator.defaultPrefixString()}\n\n`)
             .concat(`INSERT DATA {\n`)
-            .concat(`<${schema.baseURI}${schema.resourceType}> <${rdf}type> <${rdfs}Class> . \n`)
-            .concat(schema.label ? `<${schema.baseURI}${schema.resourceType}> <${rdfs}label> "${schema.label}" \n` : "")
-            .concat(propStatements.join(" . \n"))
+            .concat(`<${schema.baseURI}${schema.resourceType}> rdf:type rdfs:Class . \n`)
+            .concat(schema.label ? `<${schema.baseURI}${schema.resourceType}> rdfs:label "${schema.label}" \n` : "")
+            .concat(StringGenerator.rdfsDefinitions(schema))
             .concat(`\n}`);
+
         return query;
     }
 

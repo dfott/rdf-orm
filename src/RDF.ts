@@ -36,7 +36,7 @@ export class RDF {
 
             async initTupels(): Promise<boolean> {
 
-                const query = QueryBuilder.buildInitialSchemaDefinition(schema);
+                const query = QueryBuilder.buildInitialTypeDefinition(schema);
                 try {
                     await this.request.update(query);
                     return Promise.resolve(true);

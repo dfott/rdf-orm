@@ -1,7 +1,14 @@
 import { FindParameters } from "./RDF";
 import { PrefixList, PropertyList, Property, PropertyValues, Schema } from "./models/RDFModel";
+import { ResourceSchema } from "./ResourceSchema";
 
 export class StringGenerator {
+
+    static readonly defaultPrefixes: PrefixList = {
+        rdf: `http://www.w3.org/1999/02/22-rdf-syntax-ns#`,
+        rdfs: `http://www.w3.org/2000/01/rdf-schema#`,
+        xsd: `http://www.w3.org/2001/XMLSchema#`,
+    };
 
     /**
      * Generates the prefix declaration for a SparQL query.
@@ -11,6 +18,30 @@ export class StringGenerator {
         return Object.keys(prefixList).map((prefix: string) => {
             return `PREFIX ${prefix}: <${prefixList[prefix]}>`;
         }).join("\n");
+    }
+
+    public static defaultPrefixString(): string {
+        return Object.keys(StringGenerator.defaultPrefixes).map((prefix: string) => {
+            return `PREFIX ${prefix}: <${StringGenerator.defaultPrefixes[prefix]}>`;
+        }).join("\n");
+    }
+
+    public static rdfsDefinitions(schema: ResourceSchema): string {
+
+        const propStatements: string[] = [];
+        Object.keys(schema.properties).forEach(prop => {
+            const property = StringGenerator.getProperty(schema.properties[prop]);
+            propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> rdf:type rdf:Property`)
+
+            if (property.type) {
+                if (property.type === "integer") {
+                    propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> rdfs:range xsd:integer`)
+                } else if (property.type === "uri" && property.ref) {
+                    propStatements.push(`<${schema.prefixes[property.prefix]}${prop}> rdfs:range <${property.ref.schema.baseURI}${property.ref.schema.resourceType}>`)
+                }
+            }
+        });    
+        return propStatements.join(" . \n");
     }
 
     /**
