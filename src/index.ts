@@ -18,7 +18,7 @@ import { QueryBuilder } from "./QueryBuilder";
 // update funktionsübergabe für bsp age +1
 
 const prefixes: PrefixList = {
-    "ex": "http://example.org/",
+    "example": "http://example.org/",
     "schema": "http://schema.org/",
 };
 
@@ -29,7 +29,8 @@ const ProjectSchema = new ResourceSchema({
     resourceType: "Project",
     baseURI: prefixes.schema,
     properties: {
-        title: { prefix: "ex" }
+        title: { prefix: "example" },
+        description: {prefix: "example", optional: true }
     }
 });
 
@@ -79,16 +80,45 @@ const PersonSchema = new ResourceSchema({
             baseURI: prefixes.schema,
             prefixes,
             properties: {
-                firstname: { prefix: "ex" },
-                age: { prefix: "ex", type: "integer" },
+                firstname: { prefix: "example" },
+                lastname: { prefix: "example" },
+                age: { prefix: "example", type: "integer" },
                 project: { prefix: "schema", type: "uri", ref: Project }
             }
     });
 
-    const Person = RDF.createModel(PersonSchema, request);
+    const Person = RDF.createModel(person, request);
+
+    // const daniel = await Person.create({
+    //     identifier: "DanielFott",
+    //     firstname: "Daniel",
+    //     lastname: "Fott",
+    //     age: 20,
+    //     project: "http://schema.org/Project/ErstesProjekt",
+    // });
+    // await daniel.save();
+
+    const proj = await Project.create({
+        identifier: "ErstesProjekt",
+        title: "Mein erstes Projekt",
+        // description: "Dies ist ein erstes Projekt, welches sich mit RDF beschäftigt.",
+    })
+    await proj.save();
+
+    // console.log(
+    //     await Person.find({}, nquad => {}, query => {
+    //         console.log(query);
+    //         return query;
+    //     })
+    // )
+    // await Person.deleteByIdentifier("DanielFott")
+    console.log(
+        await Project.find()
+    )
 
 
-    await Person.initTupels();
+    // await Person.initTupels();
+    // await Project.initTupels();
 
     // const presentation = await Presentation.create({ identifier: "Pres1", content: "Dies ist meine erste Präsentation!"});
     // await presentation.save();

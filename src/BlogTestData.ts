@@ -13,18 +13,18 @@ const prefixes = {
 const req = new RDFRequest("http://localhost:3030/testblog/query", "http://localhost:3030/testblog/update");
 // const req = new RDFRequest("http://localhost:3030/person/query", "http://localhost:3030/person/update");
 
-const CommentSchema: Schema = {
+const CommentSchema: ResourceSchema = new ResourceSchema({
     prefixes: prefixes,
     baseURI: prefixes.schema,
     resourceType: "Comment",
     properties: {
         content: { prefix: "rdf" }
     }
-}
+});
 
 const Comment = RDF.createModel(new ResourceSchema(CommentSchema), req);
 
-const BlogSchema: Schema = {
+const BlogSchema: ResourceSchema = new ResourceSchema({
     prefixes: prefixes,
     baseURI: prefixes.schema,
     resourceType: "Blog",
@@ -32,7 +32,7 @@ const BlogSchema: Schema = {
         title: { prefix: "schema" },
         comment: [{ prefix: "schema", optional: true, type: "uri", ref: Comment}]
     }
-}
+});
 
 const CommentArrayProperty: Property = {
     prefix: "schema", optional: true, type: "uri", ref: Comment

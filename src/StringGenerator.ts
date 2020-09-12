@@ -133,7 +133,6 @@ export class StringGenerator {
             if (typeof value === "object" && value.relative) { 
                 rdfObject = `${property.ref.schema?.baseURI}${property.ref.schema?.resourceType}/${value}` 
             }
-            console.log("rdfobject", rdfObject, value)
             statementList.push(`<${uri}> ${property.prefix}:${propertyName} <${rdfObject}>`);
         } else {
             if (property.type !== "integer") {

@@ -6,6 +6,7 @@ import { StringGenerator } from "./StringGenerator";
 import * as jsonld from "jsonld";
 import { Context, LDResource, LDResourceList, JsonLD } from "./models/JsonLD";
 import { PreHookFunction } from "./RDF";
+import { ResourceSchema } from "./ResourceSchema";
 
 
 export interface RawJsonLDResource {
@@ -28,7 +29,7 @@ export class LdConverter {
      * @param schema - schema that provides the necessary information about the model
      * @param nquads - resulting nquads 
      */
-    constructor(private request: RDFRequest, private schema: Schema, public nquads: object) {
+    constructor(private request: RDFRequest, private schema: ResourceSchema, public nquads: object) {
     }
 
     /**
@@ -173,10 +174,22 @@ export class LdConverter {
     public async save(ldResource: LDResource, schema: Schema): Promise<void> {
         const values: PropertyValues = { identifier: ldResource["@id"] };
         this.extractValuesFromLD(values, ldResource, schema.properties);
+        this.checkIfValuesExist(ldResource, schema);
         const insertQuery = QueryBuilder.buildInsert(values, schema);
         await this.request.update(insertQuery);
         ldResource.save = () => this.update(ldResource, schema);
         return Promise.resolve();
+    }
+
+    public checkIfValuesExist(ldResource: LDResource, schema: Schema) {
+        Object.keys(schema.properties).forEach(propName => {
+            const property = StringGenerator.getProperty(schema.properties[propName]);
+            if (!property.optional) {
+                if (!ldResource[propName]) {
+                    throw Error(`No value given for required property ${propName}`);
+                }
+            }
+        });
     }
 
     /**

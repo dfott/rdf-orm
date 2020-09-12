@@ -12,8 +12,6 @@ export class RDFRequest {
             const result = await axios.post(this.updateUri, params, {
                 headers,
             });
-            // console.log('Succsefully send update');
-            // console.log(query);
         } catch (err) {
             console.log(err);
         }
@@ -26,8 +24,6 @@ export class RDFRequest {
                     query,
                 }, headers
             });
-            // console.log('Succsefully send query');
-            // console.log(query);
             const data = result.data.results;
             return data ? data : result.data;
         } catch (err) {
