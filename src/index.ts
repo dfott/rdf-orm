@@ -39,15 +39,15 @@ const PersonSchema = new ResourceSchema({
     resourceType: "Person",
     baseURI: prefixes.schema,
     properties: {
-        firstname: { prefix: "ex" },
-        password: { prefix: "ex" },
-        age: { prefix: "ex", type: "integer" },
-        project: { prefix: "ex", type: "uri", optional: true, ref: Project },
+        firstname: { prefix: "example" },
+        password: { prefix: "example" },
+        age: { prefix: "example", type: "integer" },
+        project: { prefix: "example", type: "uri", optional: true, ref: Project },
         presentations: [{ prefix: "schema", type: "uri", optional: true, ref: Presentation }]
     }
 });
 
-// const Person = RDF.createModel(PersonSchema, request);
+const Person = RDF.createModel(PersonSchema, request);
 
 // Person.pre("save", (next, values) => {
 //     if (values) {
@@ -104,12 +104,5 @@ const PersonSchema = new ResourceSchema({
 
     // const person = await Person.findByIdentifier("NeuePerson");
     // await person.populate("presentations")
-
-    console.log(
-        await Project.find()
-    )
-
-    console.log(
-        await Project.findOne()
-    )
+   
 })()

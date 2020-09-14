@@ -1,6 +1,6 @@
 # RDF-Modeller
 
-Dieser RDF-Modeller soll nach dem Muster der „Object Document Mapper“ Library Mongoose genutzt werden, um Objekte aus JavaScript in RDF Tripel abzubilden. Dieses Modellierungstool soll dem Nutzer ermöglichen, über JavaScript Objekte mit einem Triplestorezu kommunizieren, um so unter anderem die wichtigsten CRUD Funktionen auszuführen, ohne ein Verständnis über den Aufbau von RDF und SPARQL vorauszusetzen. Durch die Nutzung dieser library kann man mit einem Triplestore interagieren, ohne vorher SPARQL zu lernen und muss sich nur noch mit den Grundprinzipien des Semantic Webs beschäftigen.
+Dieser RDF-Modeller soll nach dem Muster der „Object Document Mapper“ Library Mongoose genutzt werden, um Objekte aus JavaScript in RDF Tripel abzubilden. Dieses Modellierungstool soll dem Nutzer ermöglichen, über JavaScript Objekte mit einem Triplestore zu kommunizieren, um so unter anderem die wichtigsten CRUD Funktionen auszuführen, ohne ein Verständnis über den Aufbau von RDF und SPARQL vorauszusetzen. Durch die Nutzung dieser library kann man mit einem Triplestore interagieren, ohne vorher SPARQL zu lernen und muss sich nur noch mit den Grundprinzipien des Semantic Webs beschäftigen.
 
 ## Erstellen eines Schemas zum Modellieren von Ressourcen
 
@@ -25,6 +25,22 @@ const ProjectSchema = new ResourceSchema({
 
 Das erste Object prefix wird genutzt, um bestimmte Abkürzungen auf URIs abzubilden. Diese werden im folgenden für die Identifier der erstellten Ressourcen und Attribute genutzt.
 Darauf folgt das Schema. Dafür nutzt man die Klasse ResourceSchema. Sie nimmt das Objekt prexifes, einen Namen für den Typen der Ressourcen, eine Base-URI und ein Objekt, welches die Attribute spezifiziert.
+
+### Darstellen von one-to-one Beziehungen
+
+```javascript
+const PersonSchema = new ResourceSchema({
+    prefixes,
+    resourceType: "Person",
+    baseURI: prefixes.schema,
+    properties: {
+      firstname: { prefix: "example" },
+      age: { prefix: "example", type: "integer" },
+      // Das Objekt Project ist hierbei das im nächsten Abschnitt erstellte Model
+      project: { prefix: "schema", type: "uri", ref: Project },
+    }
+});
+```
 
 ## Erstellen eines Models
 
@@ -159,3 +175,67 @@ Project.pre("save", (next, values) => {
 ```
 
 Es ist möglich, eine Funktion anzugeben, die immer ausgeführt wird, bevor eine Ressource gespeichert wird. In diesem Fall wird der Titel von jeder Project Ressource vor dem Speichern angepasst. Durch den Aufruf von next() geht die normales Ausführung weiter.
+
+## Population
+
+Für ein JOIN ähnliches Verhalten aus SQL gibt es die Funktion populate.
+
+```javascript
+const person = await Person.create({
+  identifier: "Person1",
+  firstname: "Testo",
+  age: 22,
+  project: "http://schema.org/Project/Project1",
+});
+```
+
+Sobald diese Ressource erstellt wird, kann man nach dieser Suchen. Das folgende Beispiel zeigt, was das Resultat einer Suche mit populate im Vergleich zur normalen Suche ist.
+
+```javascript
+let person = await Person.findByIdentifier("Person1");
+
+/*
+  person = {
+    '@context': {
+      firstname: { '@id': 'http://example.org/firstname' },
+      age: {
+        '@id': 'http://example.org/age',
+        '@type': 'http://www.w3.org/2001/XMLSchema#integer'
+      },
+      project: { '@id': 'http://example.org/project', '@type': '@id' }
+    },
+    '@id': 'http://schema.org/Person/Person1',
+    '@type': 'http://schema.org/Person',
+    age: '22',
+    firstname: 'Testo',
+    project: 'http://schema.org/Project/Project1',
+  }
+*/
+
+await person.populate("project");
+
+/*
+  person = {
+    '@context': {
+      firstname: { '@id': 'http://example.org/firstname' },
+      age: {
+        '@id': 'http://example.org/age',
+        '@type': 'http://www.w3.org/2001/XMLSchema#integer'
+      },
+      project: { '@id': 'http://example.org/project', '@type': '@id' }
+    },
+    '@id': 'http://schema.org/Person/Person1',
+    '@type': 'http://schema.org/Person',
+    age: '22',
+    firstname: 'Testo',
+    project: {
+      '@context': { title: [Object], description: [Object] },
+      '@id': 'http://schema.org/Project/Project1',
+      '@type': 'http://schema.org/Project',
+      description: 'This is my very first project, that i am working on.',
+      title: 'My first Project',
+    },
+  }
+*/
+
+```
