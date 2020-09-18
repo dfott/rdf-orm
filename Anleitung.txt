@@ -1,0 +1,17 @@
+In diesem Ordner befindet sich das Modellierungstool, welches ich für meine Bachelorarbeit
+"Entwicklung eines Modellierungstools zum Verbessern des Einstiegs in die Standards des Semantic Webs" entwickelt habe.
+
+
+Informationen zum Quellcode:
+
+- Zum Ausführen wird "node" und "npm" benötigt.
+
+- Ausführliche Beispiele befinden sich in der Datei src/index.ts
+- zum Ausführen dieser Datei muss der Befehl "npm run dev" genutzt werden
+- um dieses Tool zu nutzen, wird ein laufender Triplestore benötigt, am besten eignet sich 
+dafür "Apache Jena Fuseki", den man unter https://jena.apache.org/download/ herunterladen kann.
+- Erklärungen für den Code finden sich unter der README.MD oder in der Bachelorarbeit
+
+
+
+Daniel Fott
