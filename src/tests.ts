@@ -70,12 +70,17 @@ const Person = RDF.createModel(PersonSchema, request);
     // await presentation2.save();
 
     // const project = await Project.create({ identifier: "Project1", title: "First Project"});
+    // console.log(project)
     // await project.save();
 
     // // const meinrpoject = ;
     // // const person = await Person.create({ identifier: "DanielFott", firstname: "Daniel", password: "Daniel11", age: 20, project: (await Project.findOne({ title: "Hallo" }))["@id"]});
-    // const person = await Person.create({ identifier: "DanielFott", firstname: "Daniel", password: "Daniel11", age: 20, project: ProjectSchema.identifier("Project1")});
+    // const person = await Person.create({ identifier: "DanielFott", firstname: "Daniel", password: "Daniel11", age: 20, project: ProjectSchema.buildIdentifier("Project1")});
+    // console.log(person)
     // await person.save();
+    console.log(
+        await (await Person.findByIdentifier("DanielFott")).populate("project")
+    )
 
     // const person2 = await Person.create({ identifier: "NeuePerson", firstname: "Neue", password: "Neue11", age: 20, presentations: [PresentationSchema.identifier("Pres1")]});
     // await person2.save();
